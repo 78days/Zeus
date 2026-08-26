@@ -17,22 +17,21 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { generateSlug } from "@/features/workflows/lib/generate-slug"
+import type { workflow as WorkflowRecord } from "@/lib/db/schema"
 
-const workflows = [
-  "dominant-wasp",
-  "honest-reindeer",
-  "expected-llama",
-  "essential-ocelot",
-  "creepy-echidna",
-  "eastern-silkworm",
-  "cultural-lion",
-  "proud-weasel",
-  "regional-bonobo",
-]
+type WorkflownavProps = {
+  workflows: WorkflowRecord[]
+  createWorkflowAction: (name: string) => Promise<void>
+}
 
-export function Workflownav() {
+export function Workflownav({
+  workflows,
+  createWorkflowAction,
+}: WorkflownavProps) {
   const { isMobile, state } = useSidebar()
   const isCollapsed = state === "collapsed" && !isMobile
+  const handleCreateWorkflow = () => createWorkflowAction(generateSlug())
 
   if (isCollapsed) {
     return (
@@ -46,17 +45,17 @@ export function Workflownav() {
           <PopoverContent side="right" align="start" className="w-72 p-2">
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton>
+                <SidebarMenuButton onClick={handleCreateWorkflow}>
                   <Plus />
                   <span>New workflow</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <div className="my-1 border-t" />
-              {workflows.map((workflow, index) => (
-                <SidebarMenuItem key={workflow}>
-                  <SidebarMenuButton isActive={index === 0}>
+              {workflows.map((workflow) => (
+                <SidebarMenuItem key={workflow.id}>
+                  <SidebarMenuButton>
                     <Workflow />
-                    <span>{workflow}</span>
+                    <span>{workflow.name}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -68,18 +67,22 @@ export function Workflownav() {
   }
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>Workflows</SidebarGroupLabel>
-      <SidebarGroupAction aria-label="Create workflow" title="Create workflow">
+      <SidebarGroup>
+        <SidebarGroupLabel>Workflows</SidebarGroupLabel>
+      <SidebarGroupAction
+        aria-label="Create workflow"
+        title="Create workflow"
+        onClick={handleCreateWorkflow}
+      >
         <Plus />
       </SidebarGroupAction>
       <SidebarGroupContent>
         <SidebarMenu>
-          {workflows.map((workflow, index) => (
-            <SidebarMenuItem key={workflow}>
-              <SidebarMenuButton isActive={index === 0}>
+          {workflows.map((workflow) => (
+            <SidebarMenuItem key={workflow.id}>
+              <SidebarMenuButton>
                 <Workflow />
-                <span>{workflow}</span>
+                <span>{workflow.name}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
