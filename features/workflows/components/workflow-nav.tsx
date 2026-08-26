@@ -1,6 +1,9 @@
 "use client"
 
 import { Plus, Workflow } from "lucide-react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { useTransition } from "react"
 
 import {
   Popover,
@@ -30,8 +33,14 @@ export function Workflownav({
   createWorkflowAction,
 }: WorkflownavProps) {
   const { isMobile, state } = useSidebar()
+  const pathname = usePathname()
+  const [isCreating, startTransition] = useTransition()
   const isCollapsed = state === "collapsed" && !isMobile
-  const handleCreateWorkflow = () => createWorkflowAction(generateSlug())
+  const handleCreateWorkflow = () => {
+    startTransition(async () => {
+      await createWorkflowAction(generateSlug())
+    })
+  }
 
   if (isCollapsed) {
     return (
@@ -45,7 +54,10 @@ export function Workflownav({
           <PopoverContent side="right" align="start" className="w-72 p-2">
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={handleCreateWorkflow}>
+                <SidebarMenuButton
+                  disabled={isCreating}
+                  onClick={handleCreateWorkflow}
+                >
                   <Plus />
                   <span>New workflow</span>
                 </SidebarMenuButton>
@@ -53,9 +65,14 @@ export function Workflownav({
               <div className="my-1 border-t" />
               {workflows.map((workflow) => (
                 <SidebarMenuItem key={workflow.id}>
-                  <SidebarMenuButton>
-                    <Workflow />
-                    <span>{workflow.name}</span>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === `/workflows/${workflow.id}`}
+                  >
+                    <Link href={`/workflows/${workflow.id}`}>
+                      <Workflow />
+                      <span>{workflow.name}</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -67,10 +84,11 @@ export function Workflownav({
   }
 
   return (
-      <SidebarGroup>
-        <SidebarGroupLabel>Workflows</SidebarGroupLabel>
+    <SidebarGroup>
+      <SidebarGroupLabel>Workflows</SidebarGroupLabel>
       <SidebarGroupAction
         aria-label="Create workflow"
+        disabled={isCreating}
         title="Create workflow"
         onClick={handleCreateWorkflow}
       >
@@ -80,9 +98,14 @@ export function Workflownav({
         <SidebarMenu>
           {workflows.map((workflow) => (
             <SidebarMenuItem key={workflow.id}>
-              <SidebarMenuButton>
-                <Workflow />
-                <span>{workflow.name}</span>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === `/workflows/${workflow.id}`}
+              >
+                <Link href={`/workflows/${workflow.id}`}>
+                  <Workflow />
+                  <span>{workflow.name}</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
