@@ -34,9 +34,6 @@ export default function RootLayout({
       <body>
         <ClerkProvider appearance={{ theme: shadcn }}>
           <ThemeProvider>
-            <header className="flex h-14 items-center justify-end gap-2 border-b px-6">
-              
-            </header>
             {children}
           </ThemeProvider>
         </ClerkProvider>
