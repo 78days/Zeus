@@ -1,26 +1,25 @@
 "use client"
 
-import React, { useCallback, useState, useSyncExternalStore } from "react"
+import React, { useSyncExternalStore } from "react"
 import {
-  addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
   ConnectionLineType,
   Panel,
   ReactFlow,
-  type Connection,
   type Edge,
-  type EdgeChange,
-  type NodeChange,
-  NodeTypes,
 } from "@xyflow/react"
+import { useLiveblocksFlow  , Cursors} from "@liveblocks/react-flow"
 import { MoonIcon, SunIcon } from "lucide-react"
 import { useTheme } from "next-themes"
+import { AvatarStack } from "@liveblocks/react-ui"
 
 import { Button } from "@/components/ui/button"
 
 import { StepNode } from "./step-node"
 import { nodeRegistry, StepNodeType } from "../nodes/node-registry"
+
+import "@xyflow/react/dist/style.css"
+import "@liveblocks/react-ui/styles.css"
+import "@liveblocks/react-flow/styles.css"
 
 const nodeTypes = {
   step: StepNode,
@@ -63,22 +62,12 @@ export function WorkflowCanvas() {
     () => true,
     () => false,
   )
-  const [nodes, setNodes] = useState(initialNodes)
-  const [edges, setEdges] = useState(initialEdges)
-
-  const onNodesChange = useCallback((changes: NodeChange<StepNodeType>[]) => {
-    setNodes((nodesSnapshot) =>
-      applyNodeChanges<StepNodeType>(changes, nodesSnapshot)
-    )
-  }, [])
-
-  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
-    setEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot))
-  }, [])
-
-  const onConnect = useCallback((connection: Connection) => {
-    setEdges((edgesSnapshot) => addEdge(connection, edgesSnapshot))
-  }, [])
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect } =
+    useLiveblocksFlow({
+      suspense: true,
+      nodes: { initial: initialNodes },
+      edges: { initial: initialEdges },
+    })
 
   return (
     <div className="size-full">
@@ -120,6 +109,11 @@ export function WorkflowCanvas() {
             {mounted && resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />}
           </Button>
         </Panel>
+        <Panel position="top-right">
+            <AvatarStack/>
+
+        </Panel>
+        <Cursors/>
       </ReactFlow>
     </div>
   )

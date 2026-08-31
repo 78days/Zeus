@@ -23,6 +23,9 @@ export async function AppSidebar() {
         <div className="flex h-8 items-center gap-2">
           <div className="min-w-0 flex-1 overflow-hidden group-data-[collapsible=icon]:hidden">
             <OrganizationSwitcher
+            afterCreateOrganizationUrl="/"
+            afterSelectOrganizationUrl="/"
+            afterLeaveOrganizationUrl="/"
               hidePersonal
               appearance={{
                 elements: {
