@@ -20,3 +20,7 @@ enforces the shape.
 
 This project has Trigger.dev agent skills installed in `.agents/skills/`. Before writing or changing Trigger.dev code (background tasks, scheduled tasks, realtime, or chat.agent AI agents), load the most relevant skill: `trigger-authoring-chat-agent`, `trigger-authoring-tasks`, `trigger-chat-agent-advanced`, `trigger-cost-savings`, `trigger-getting-started`, `trigger-realtime-and-frontend`.
 <!-- TRIGGER.DEV SKILLS END -->
+
+## React Flow documentation
+
+Whenever working with React Flow APIs, components, or usage patterns, do not rely on training data. First search and consult the official React Flow documentation index at https://reactflow.dev/llms.txt, and follow the current documentation before writing or changing code.

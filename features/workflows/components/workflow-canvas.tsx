@@ -20,18 +20,35 @@ import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 
 import { StepNode } from "./step-node"
-import { StepNodeType } from "../nodes/node-registry"
+import { nodeRegistry, StepNodeType } from "../nodes/node-registry"
 
 const nodeTypes = {
   step: StepNode,
 }
 
 const initialNodes: StepNodeType[] = [
-  { 
-    id: "start", 
-    type: "step" , 
-    position: { x:0, y:0}, 
-     data : { type : "start" , kind: "trigger", title: "Start", values: {}}}
+  {
+    id: "start",
+    type: "step",
+    position: { x: 0, y: 0 },
+    data: {
+      type: "start",
+      kind: nodeRegistry.start.kind,
+      title: nodeRegistry.start.label,
+      values: {},
+    },
+  },
+  {
+    id: "open-url",
+    type: "step",
+    position: { x: 300, y: 0 },
+    data: {
+      type: "open-url",
+      kind: nodeRegistry["open-url"].kind,
+      title: nodeRegistry["open-url"].label,
+      values: {},
+    },
+  },
 ]
 const initialEdges: Edge[] = []
 
@@ -49,8 +66,10 @@ export function WorkflowCanvas() {
   const [nodes, setNodes] = useState(initialNodes)
   const [edges, setEdges] = useState(initialEdges)
 
-  const onNodesChange = useCallback((changes: NodeChange[]) => {
-    setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot))
+  const onNodesChange = useCallback((changes: NodeChange<StepNodeType>[]) => {
+    setNodes((nodesSnapshot) =>
+      applyNodeChanges<StepNodeType>(changes, nodesSnapshot)
+    )
   }, [])
 
   const onEdgesChange = useCallback((changes: EdgeChange[]) => {
