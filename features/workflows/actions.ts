@@ -5,7 +5,7 @@ import { tasks } from "@trigger.dev/sdk";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { createWorkflow } from "@/features/workflows/data";
+import { createWorkflow, deleteWorkflow } from "@/features/workflows/data";
 import type { exampleTask } from "@/src/trigger/example";
 
 export const createWorkflowAction = async (name: string) => {
@@ -30,3 +30,15 @@ export const runWorkflowAction = async (workflowId: string) => {
 
   return tasks.trigger<typeof exampleTask>("example", { workflowId, orgId });
 };
+
+export const deleteWorkflowAction = async (workflowId: string) => {
+  const { orgId } = await auth()
+
+  if (!orgId) {
+    throw new Error("An active organization is required to delete a workflow")
+  }
+
+  await deleteWorkflow(orgId, workflowId)
+  revalidatePath("/", "layout")
+  redirect("/")
+}
