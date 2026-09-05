@@ -64,6 +64,7 @@
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "tailwindcss": "^4",
+    "toposort": "^2.0.2",
     "typescript": "^5"
   }
 }
