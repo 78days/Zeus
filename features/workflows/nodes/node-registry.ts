@@ -37,7 +37,15 @@ export const nodeRegistry = {
     label: "Open URL",
     icon: Globe,
     accent: "bg-emerald-500 text-white",
-    fields: [{ key: "url", label: "URL", placeholder: "https://youtube.com" }],
+    fields: [
+      { key: "url", label: "URL", placeholder: "https://youtube.com" , required: true },
+      {
+        key: "description",
+        label: "Description",
+        placeholder: "Large Text",
+        multiline: true,
+      }
+    ],
   },
 } satisfies Record<string, NodeDefinition>
 

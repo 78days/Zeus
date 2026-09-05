@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createWorkflow, deleteWorkflow } from "@/features/workflows/data";
+import { liveblocks } from "@/lib/liveblocks";
 import type { exampleTask } from "@/src/trigger/example";
 
 export const createWorkflowAction = async (name: string) => {
@@ -38,7 +39,12 @@ export const deleteWorkflowAction = async (workflowId: string) => {
     throw new Error("An active organization is required to delete a workflow")
   }
 
-  await deleteWorkflow(orgId, workflowId)
+  const deleted = await deleteWorkflow(orgId, workflowId)
+
+  if (deleted.length > 0) {
+    await liveblocks.deleteRoom(workflowId)
+  }
+
   revalidatePath("/", "layout")
   redirect("/")
 }
