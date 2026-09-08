@@ -21,7 +21,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { generateSlug } from "@/features/workflows/lib/generate-slug"
-import type { workflow as WorkflowRecord } from "@/lib/db/schema"
+import type { Workflow as WorkflowRecord } from "@/lib/db/schema"
 
 type WorkflownavProps = {
   workflows: WorkflowRecord[]

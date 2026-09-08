@@ -11,11 +11,11 @@ import {
 } from "@/components/ui/sidebar"
 import { createWorkflowAction } from "@/features/workflows/actions"
 import { Workflownav } from "@/features/workflows/components/workflow-nav"
-import { listworkflows } from "@/features/workflows/data"
+import { listWorkflows } from "@/features/workflows/data"
 
 export async function AppSidebar() {
   const { orgId } = await auth()
-  const workflows = orgId ? await listworkflows(orgId) : []
+  const workflows = orgId ? await listWorkflows(orgId) : []
 
   return (
     <Sidebar collapsible="icon">

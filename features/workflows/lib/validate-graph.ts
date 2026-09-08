@@ -4,7 +4,6 @@ import type { StepNodeType } from "@/features/workflows/nodes/node-registry"
 
 export function validateGraph({
   nodes,
-  edges: _edges,
 }: {
   nodes: StepNodeType[]
   edges: Edge[]

@@ -313,7 +313,7 @@ function RunButton({ workflowId }: { workflowId: string }) {
         }
 
         startTransition(async () => {
-          await runWorkflowAction(workflowId)
+          await runWorkflowAction({ id: workflowId, graph })
         })
       }}
     >

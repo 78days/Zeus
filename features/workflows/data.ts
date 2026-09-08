@@ -41,7 +41,7 @@ export async function getWorkflow(orgId: string, id: string) {
 export async function createWorkflow(orgId: string, name: string) {
   const [workflow] = await db
     .insert(workflows)
-    .values({ orgId, name })
+    .values({ orgId, name, graph: { nodes: [], edges: [] } })
     .returning()
 
   return workflow
