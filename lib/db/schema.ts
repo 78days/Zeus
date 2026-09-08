@@ -1,19 +1,29 @@
-import { Edge } from "@xyflow/react"
+import toposort from "toposort"
 
-import { pgTable , jsonb , text , timestamp, uuid } from "drizzle-orm/pg-core"
-import type { StepNodeType } from "@/features/workflows/nodes/node-registry"
+import type { WorkflowGraph } from "@/lib/db/schema"
 
-export type WorkflowGraph = {
-    nodes : StepNodeType[]
-    edges : Edge[]
+// Structural problems knowable before a run — empty array means runnable. Pure
+// (no db import) so the client can pre-flight the in-hand graph and toast,
+// while the server reuses it as the save-time backstop.
+export function validateGraph({ nodes, edges }: WorkflowGraph): string[] {
+  const problems: string[] = []
+
+  const triggers = nodes.filter((n) => n.data.kind === "trigger").length
+  if (triggers !== 1) {
+    problems.push(`A workflow needs exactly one Start trigger (found ${triggers}).`)
+  }
+
+  // The runner only executes nodes touching an edge, so with none Run is a no-op.
+  if (edges.length === 0) {
+    problems.push("Connect your nodes before running.")
+  } else {
+    try {
+      // toposort throws on a cycle — the run would otherwise fail mid-sort.
+      toposort(edges.map((e) => [e.source, e.target]))
+    } catch {
+      problems.push("Workflow has a cycle — remove the loop before running.")
+    }
+  }
+
+  return problems
 }
-export const workflows = pgTable("workflows", {
-    id : uuid("id").primaryKey().defaultRandom(),
-    orgId : text("org_id").notNull(),
-    name : text("name").notNull(),
-    graph : jsonb("graph").notNull().$type<WorkflowGraph>(),
-    createdAt : timestamp("created_at").defaultNow().notNull(),
-    updatedAt : timestamp("updated_at").defaultNow().notNull(),
-})
-export type workflow = typeof workflows.$inferSelect
-

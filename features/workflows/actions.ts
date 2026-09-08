@@ -1,50 +1,75 @@
-"use server";
+"use server"
 
-import { auth } from "@clerk/nextjs/server";
-import { tasks } from "@trigger.dev/sdk";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { auth } from "@clerk/nextjs/server"
+import { runs, tasks } from "@trigger.dev/sdk"
+import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
 
-import { createWorkflow, deleteWorkflow } from "@/features/workflows/data";
-import { liveblocks } from "@/lib/liveblocks";
-import type { exampleTask } from "@/src/trigger/example";
+import type { runWorkflowTask } from "@/features/workflows/tasks/run-workflow";
 
-export const createWorkflowAction = async (name: string) => {
-  const { orgId } = await auth();
+import { liveblocks } from "@/lib/liveblocks"
+import { createWorkflow, deleteWorkflow, saveWorkflowGraph } from "@/features/workflows/data"
+import { WorkflowGraph } from "@/lib/db/schema"
 
-  if (!orgId) {
-    throw new Error("An active organization is required to create a workflow");
-  }
-
-  const workflow = await createWorkflow(orgId, name);
-
-  revalidatePath("/", "layout");
-  redirect(`/workflows/${workflow.id}`);
-};
-
-export const runWorkflowAction = async (workflowId: string) => {
-  const { orgId } = await auth();
-
-  if (!orgId) {
-    throw new Error("An active organization is required to run a workflow");
-  }
-
-  return tasks.trigger<typeof exampleTask>("example", { workflowId, orgId });
-};
-
-export const deleteWorkflowAction = async (workflowId: string) => {
+export async function createWorkflowAction(name: string) {
   const { orgId } = await auth()
 
   if (!orgId) {
-    throw new Error("An active organization is required to delete a workflow")
+    throw new Error("No active organization")
   }
 
-  const deleted = await deleteWorkflow(orgId, workflowId)
+  const workflow = await createWorkflow(orgId, name)
 
-  if (deleted.length > 0) {
-    await liveblocks.deleteRoom(workflowId)
+  revalidatePath("/workflows", "layout")
+  redirect(`/workflows/${workflow.id}`)
+}
+
+export async function deleteWorkflowAction(id: string) {
+  const { orgId } = await auth()
+
+  if (!orgId) {
+    throw new Error("No active organization")
   }
 
-  revalidatePath("/", "layout")
+  const workflow = await deleteWorkflow(orgId, id)
+
+  if (!workflow) {
+    throw new Error("Workflow not found")
+  }
+
+  // The workflow id doubles as its Liveblocks room id — clean it up too.
+  await liveblocks.deleteRoom(id)
+
+  revalidatePath("/workflows", "layout")
   redirect("/")
+}
+
+export async function runWorkflowAction({
+  id,
+  graph,
+}: {
+  id: string
+  graph: WorkflowGraph
+}) {
+  const { orgId } = await auth()
+
+  if (!orgId) {
+    throw new Error("No active organization")
+  }
+
+  await saveWorkflowGraph({ orgId, id, graph })
+
+  const handle = await tasks.trigger<typeof runWorkflowTask>(
+    "run-workflow",
+    { workflowId: id, orgId },
+    { tags: [`workflow:${id}`] }
+  )
+
+  return handle
+}
+
+export async function cancelWorkflowRunAction(runId: string) {
+  const { orgId } = await auth()
+  if (!orgId) throw new Error("No active organization")
+  await runs.cancel(runId)
 }
