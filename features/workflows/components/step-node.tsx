@@ -1,16 +1,22 @@
 import { memo } from "react"
 import { Handle, Position, type NodeProps } from "@xyflow/react"
 
+import { Spinner } from "@/components/ui/spinner"
+import { cn } from "@/lib/utils"
+import { useLatestRunSteps } from "./workflow-runs-provider"
 import {
   nodeRegistry,
   type StepNodeType,
 } from "../nodes/node-registry"
-import { cn } from "@/lib/utils"
 
-function StepNodeComponent({ data, selected }: NodeProps<StepNodeType>) {
+function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
   const { type, kind, title ,values } = data
   const def = nodeRegistry[type]
   const Icon = def.icon
+  const { steps, live } = useLatestRunSteps()
+  const status = steps.find((step) => step.id === id)?.status
+  const isRunning = live && status === "running"
+  const isFailed = status === "failed"
   const fields = def.fields.filter((field) => values[field.key])
 
   // A trigger starts the flow and takes no input, so it has no target handle.
@@ -20,6 +26,8 @@ function StepNodeComponent({ data, selected }: NodeProps<StepNodeType>) {
     <div
       className={cn(
         "min-w-50 max-w-80 rounded-(--radius) border-2 border-border bg-card text-card-foreground",
+        isRunning && "border-blue-500",
+        isFailed && "border-destructive",
         selected && "ring-2 ring-ring ring-offset-2 ring-offset-background"
       )}
     >
@@ -33,14 +41,14 @@ function StepNodeComponent({ data, selected }: NodeProps<StepNodeType>) {
       )}
 
       <div className="flex items-center gap-2.5 px-3 py-2.5">
-        <div
-          className={cn(
-            "flex size-7 shrink-0 items-center justify-center rounded-md",
-            def.accent
-          )}
-        >
-          <Icon className="size-4" />
-        </div>
+          <div
+            className={cn(
+              "flex size-7 shrink-0 items-center justify-center rounded-md",
+              def.accent
+            )}
+          >
+            {isRunning ? <Spinner className="size-4" /> : <Icon className="size-4" />}
+          </div>
         <span className="text-sm font-semibold">{title}</span>
       </div>
 
