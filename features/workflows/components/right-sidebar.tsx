@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useRef, useState, useTransition } from "react"
 import { useReactFlow, useStore } from "@xyflow/react"
 import { MoreHorizontal, Play, Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
 import { deleteWorkflowAction, runWorkflowAction } from "@/features/workflows/actions"
+import { useUpstreamConnections } from "@/features/workflows/hooks/use-upstream-connections"
 import { validateGraph } from "@/features/workflows/lib/validate-graph"
 import {
   nodeRegistry,
@@ -93,17 +94,26 @@ function Field({
   field,
   value,
   onChange,
+  inputRef,
+  onFocus,
+  onSelect,
 }: {
   field: NodeField
   value: string
   onChange: (value: string) => void
+  inputRef: (element: HTMLInputElement | HTMLTextAreaElement | null) => void
+  onFocus: () => void
+  onSelect: () => void
 }) {
   if (field.multiline) {
     return (
       <Textarea
         id={field.key}
+        ref={(element) => inputRef(element)}
         value={value}
         placeholder={field.placeholder}
+        onFocus={onFocus}
+        onSelect={onSelect}
         onChange={(e) => onChange(e.target.value)}
       />
     )
@@ -112,8 +122,11 @@ function Field({
   return (
     <Input
       id={field.key}
+      ref={(element) => inputRef(element)}
       value={value}
       placeholder={field.placeholder}
+      onFocus={onFocus}
+      onSelect={onSelect}
       onChange={(e) => onChange(e.target.value)}
     />
   )
@@ -122,6 +135,9 @@ function Field({
 // The Editor tab: one input per field on the selected node, or an empty state.
 function Inspector({ node }: { node: StepNodeType | undefined }) {
   const { updateNodeData } = useReactFlow<StepNodeType>()
+  const connections = useUpstreamConnections(node)
+  const fieldRefs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({})
+  const [lastFieldKey, setLastFieldKey] = useState<string>()
 
   if (!node) {
     return (
@@ -133,6 +149,31 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
 
   const { type, title, values } = node.data
   const def: NodeDefinition = nodeRegistry[type]
+  const activeFieldKey = lastFieldKey ?? def.fields[0]?.key
+
+  const updateField = (fieldKey: string, value: string) => {
+    updateNodeData(node.id, {
+      values: { ...values, [fieldKey]: value },
+    })
+  }
+
+  const insertConnection = (token: string) => {
+    if (!activeFieldKey) return
+
+    const field = fieldRefs.current[activeFieldKey]
+    const currentValue = values[activeFieldKey] ?? ""
+    const start = field?.selectionStart ?? currentValue.length
+    const end = field?.selectionEnd ?? start
+    const nextValue = `${currentValue.slice(0, start)}${token}${currentValue.slice(end)}`
+
+    updateField(activeFieldKey, nextValue)
+    setLastFieldKey(activeFieldKey)
+    field?.focus()
+    requestAnimationFrame(() => {
+      const cursor = start + token.length
+      field?.setSelectionRange(cursor, cursor)
+    })
+  }
 
   return (
     <Section title={title} icon={<NodeIcon type={type} />}>
@@ -149,16 +190,41 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
               <Field
                 field={field}
                 value={values[field.key] ?? ""}
+                inputRef={(element) => {
+                  fieldRefs.current[field.key] = element
+                }}
+                onFocus={() => setLastFieldKey(field.key)}
+                onSelect={() => setLastFieldKey(field.key)}
                 onChange={(value) => {
-                  updateNodeData(node.id, {
-                    values: { ...values, [field.key]: value },
-                  })
+                  setLastFieldKey(field.key)
+                  updateField(field.key, value)
                 }}
               />
             </div>
           ))
         )}
       </div>
+      {connections.length > 0 && (
+        <div className="border-t border-border p-3">
+          <p className="mb-2 text-xs font-semibold">Connections</p>
+          <div className="flex flex-wrap gap-1.5">
+            {connections.map((connection) => (
+              <Button
+                key={connection.token}
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1.5 px-2 text-xs"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => insertConnection(connection.token)}
+              >
+                <NodeIcon type={connection.type} className="size-4 rounded-sm" />
+                {connection.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
     </Section>
   )
 }
