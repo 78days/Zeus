@@ -69,7 +69,12 @@ export const runWorkflowTask = task({
       const apiKey = process.env.BROWSERBASE_API_KEY
       if (!apiKey) throw new Error("BROWSERBASE_API_KEY is not set")
 
-      browser = await browserbase.launch({ apiKey })
+      browser = await browserbase.launch({
+        apiKey,
+        // A pre-uploaded extension avoids runtime uploads in Trigger deployments,
+        // where package assets may not be available to the worker.
+        extensionId: process.env.BROWSERBASE_EXTENSION_ID,
+      })
       stagehand = await Stagehand.create({
         browser,
         model: {
