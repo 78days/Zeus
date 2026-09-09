@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react"
 import { useReactFlow, useStore } from "@xyflow/react"
-import { MoreHorizontal, Play, Trash2 } from "lucide-react"
+import { LockKeyhole, MoreHorizontal, Play, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
 import { deleteWorkflowAction, runWorkflowAction } from "@/features/workflows/actions"
+import { useOrgPro } from "@/features/workflows/hooks/use-org-pro"
 import { useUpstreamConnections } from "@/features/workflows/hooks/use-upstream-connections"
 import { validateGraph } from "@/features/workflows/lib/validate-graph"
 import { NodeIcon } from "@/features/workflows/components/node-icon"
@@ -118,7 +119,7 @@ function Field({
 
 // The Editor tab: one input per field on the selected node, or an empty state.
 function Inspector({ node }: { node: StepNodeType | undefined }) {
-  const { updateNodeData } = useReactFlow<StepNodeType>()
+  const { deleteElements, updateNodeData } = useReactFlow<StepNodeType>()
   const connections = useUpstreamConnections(node)
   const fieldRefs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({})
   const [lastFieldKey, setLastFieldKey] = useState<string>()
@@ -161,6 +162,18 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
 
   return (
     <Section title={title} icon={<NodeIcon type={type} />}>
+      <div className="flex items-center justify-end border-b border-border p-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="gap-1.5 text-xs text-destructive hover:text-destructive"
+          onClick={() => deleteElements({ nodes: [node] })}
+        >
+          <Trash2 className="size-3.5" aria-hidden="true" />
+          Delete node
+        </Button>
+      </div>
       <div className="flex flex-col gap-3 p-3">
         {def.fields.length === 0 ? (
           <p className="text-xs text-muted-foreground">No properties</p>
@@ -234,8 +247,14 @@ function Palette() {
   // The pane's measured size, used to find the center of the current view.
   const width = useStore((s) => s.width)
   const height = useStore((s) => s.height)
+  const { isLoaded, isPro, upgrade } = useOrgPro()
 
   const add = (type: NodeType) => {
+    if (type === "agent" && !isPro) {
+      if (isLoaded) upgrade()
+      return
+    }
+
     const def = nodeRegistry[type]
     const nodes = getNodes()
 
@@ -286,17 +305,30 @@ function Palette() {
             <AccordionContent className="flex flex-col gap-0.5">
               {definitions
                 .filter((def) => def.kind === section.kind)
-                .map((def) => (
-                  <Button
-                    key={def.type}
-                    variant="ghost"
-                    onClick={() => add(def.type as NodeType)}
-                    className="justify-start gap-2.5 px-1.5 text-xs"
-                  >
-                    <NodeIcon type={def.type as NodeType} />
-                    {def.label}
-                  </Button>
-                ))}
+                .map((def) => {
+                  const isLocked = def.type === "agent" && isLoaded && !isPro
+
+                  return (
+                    <Button
+                      key={def.type}
+                      variant="ghost"
+                      onClick={() => add(def.type as NodeType)}
+                      className={cn(
+                        "justify-start gap-2.5 px-1.5 text-xs",
+                        isLocked && "text-muted-foreground"
+                      )}
+                      aria-label={
+                        isLocked ? `${def.label}, requires Pro plan` : def.label
+                      }
+                    >
+                      <NodeIcon type={def.type as NodeType} />
+                      <span className="flex-1 text-left">{def.label}</span>
+                      {isLocked && (
+                        <LockKeyhole className="size-3.5" aria-hidden="true" />
+                      )}
+                    </Button>
+                  )
+                })}
             </AccordionContent>
           </AccordionItem>
         ))}

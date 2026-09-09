@@ -12,10 +12,14 @@ import { createWorkflow, deleteWorkflow, saveWorkflowGraph } from "@/features/wo
 import type { WorkflowGraph } from "@/lib/db/schema"
 
 export async function createWorkflowAction(name: string) {
-  const { orgId } = await auth()
+  const { has, orgId } = await auth()
 
   if (!orgId) {
     throw new Error("No active organization")
+  }
+
+  if (!has({ plan: "org:pro" })) {
+    throw new Error("An organization Pro plan is required to create workflows")
   }
 
   const workflow = await createWorkflow(orgId, name)

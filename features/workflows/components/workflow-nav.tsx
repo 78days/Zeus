@@ -1,6 +1,6 @@
 "use client"
 
-import { Plus, Workflow } from "lucide-react"
+import { LockKeyhole, Plus, Workflow } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTransition } from "react"
@@ -20,6 +20,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useOrgPro } from "@/features/workflows/hooks/use-org-pro"
 import { generateSlug } from "@/features/workflows/lib/generate-slug"
 import type { Workflow as WorkflowRecord } from "@/lib/db/schema"
 
@@ -36,7 +37,16 @@ export function Workflownav({
   const pathname = usePathname()
   const [isCreating, startTransition] = useTransition()
   const isCollapsed = state === "collapsed" && !isMobile
+  const { isLoaded, isPro, upgrade } = useOrgPro()
+  const isLocked = isLoaded && !isPro
   const handleCreateWorkflow = () => {
+    if (!isLoaded) return
+
+    if (!isPro) {
+      upgrade()
+      return
+    }
+
     startTransition(async () => {
       await createWorkflowAction(generateSlug())
     })
@@ -55,11 +65,15 @@ export function Workflownav({
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  disabled={isCreating}
+                  disabled={isCreating || !isLoaded}
                   onClick={handleCreateWorkflow}
+                  aria-label={
+                    isLocked ? "Upgrade to create a workflow" : "New workflow"
+                  }
                 >
                   <Plus />
                   <span>New workflow</span>
+                  {isLocked && <LockKeyhole aria-hidden="true" />}
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <div className="my-1 border-t" />
@@ -87,12 +101,13 @@ export function Workflownav({
     <SidebarGroup>
       <SidebarGroupLabel>Workflows</SidebarGroupLabel>
       <SidebarGroupAction
-        aria-label="Create workflow"
-        disabled={isCreating}
-        title="Create workflow"
+        aria-label={isLocked ? "Upgrade to create a workflow" : "Create workflow"}
+        disabled={isCreating || !isLoaded}
+        title={isLocked ? "Upgrade to create a workflow" : "Create workflow"}
         onClick={handleCreateWorkflow}
       >
         <Plus />
+        {isLocked && <LockKeyhole aria-hidden="true" />}
       </SidebarGroupAction>
       <SidebarGroupContent>
         <SidebarMenu>
