@@ -50,7 +50,9 @@ export const runWorkflowTask = task({
     })
 
     const publishSteps = () => {
-      metadata.set("steps", [...steps] as never)
+      // Metadata is structured-cloned by Trigger.dev. Publish a detached JSON
+      // snapshot because the live steps array is mutated as the workflow runs.
+      metadata.set("steps", snapshotSteps(steps) as never)
     }
 
     publishSteps()
@@ -127,6 +129,7 @@ export const runWorkflowTask = task({
             ])
           )
           const output = await executor({ values, getStagehand })
+          const metadataOutput = toJsonValue(output)
           outputs[id] = output
           const finishedAt = new Date().toISOString()
           steps[stepIndex] = {
@@ -135,7 +138,7 @@ export const runWorkflowTask = task({
             finishedAt,
             durationMs:
               new Date(finishedAt).getTime() - new Date(startedAt).getTime(),
-            output,
+            ...(metadataOutput === undefined ? {} : { output: metadataOutput }),
           }
           publishSteps()
         } catch (error) {
@@ -158,7 +161,7 @@ export const runWorkflowTask = task({
       await browser?.close()
     }
 
-    return { steps, sessionId }
+    return { steps: snapshotSteps(steps), sessionId }
   },
 })
 
@@ -174,5 +177,37 @@ function serializeError(error: unknown): NonNullable<RunStep["error"]> {
   return {
     name: "Error",
     message: typeof error === "string" ? error : String(error),
+  }
+}
+
+function snapshotSteps(steps: RunStep[]): RunStep[] {
+  return steps.map((step) => {
+    const output = toJsonValue(step.output)
+
+    return {
+      id: step.id,
+      nodeType: step.nodeType,
+      title: step.title,
+      status: step.status,
+      ...(step.startedAt ? { startedAt: step.startedAt } : {}),
+      ...(step.finishedAt ? { finishedAt: step.finishedAt } : {}),
+      ...(step.durationMs !== undefined ? { durationMs: step.durationMs } : {}),
+      ...(output === undefined ? {} : { output }),
+      ...(step.error ? { error: { ...step.error } } : {}),
+    }
+  })
+}
+
+function toJsonValue(value: unknown): unknown {
+  if (value === undefined) return undefined
+
+  try {
+    return JSON.parse(
+      JSON.stringify(value, (_key, nestedValue: unknown) =>
+        typeof nestedValue === "bigint" ? String(nestedValue) : nestedValue
+      )
+    )
+  } catch {
+    return undefined
   }
 }
