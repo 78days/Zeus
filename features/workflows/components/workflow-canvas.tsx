@@ -9,10 +9,10 @@ import {
 } from "@xyflow/react"
 import { useLiveblocksFlow  , Cursors} from "@liveblocks/react-flow"
 import { MoonIcon, SunIcon } from "lucide-react"
-import { useTheme } from "next-themes"
 import { AvatarStack } from "@liveblocks/react-ui"
 
 import { Button } from "@/components/ui/button"
+import { useTheme } from "@/components/theme-provider"
 
 import { StepNode } from "./step-node"
 import { nodeRegistry, StepNodeType } from "../nodes/node-registry"

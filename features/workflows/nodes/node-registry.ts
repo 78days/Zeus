@@ -20,6 +20,7 @@ export type NodeDefinition = {
   icon: LucideIcon
   accent: string // Tailwind classes for the icon chip color
   fields: NodeField[]
+  outputs?: NodeOutput[]
 }
 
 export const nodeRegistry = {
@@ -30,6 +31,7 @@ export const nodeRegistry = {
     icon: MousePointerClick,
     accent: "bg-blue-500 text-white",
     fields: [],
+    outputs : []
   },
   "open-url": {
     type: "open-url",
@@ -46,6 +48,10 @@ export const nodeRegistry = {
         multiline: true,
       }
     ],
+    outputs : [
+      { path : "url", label : "URL" },
+      { path : "title", label : "Title" }
+    ]
   },
 } satisfies Record<string, NodeDefinition>
 
@@ -61,3 +67,12 @@ export type StepNodeData = {
 }
 
 export type StepNodeType = Node<StepNodeData, "step">
+
+export type ActionNodeType = {
+  [k in NodeType]: (typeof nodeRegistry)[k]["kind"] extends "action" ? k : never
+}[NodeType]
+
+export type NodeOutput = {
+  path : string
+  label : string
+}
