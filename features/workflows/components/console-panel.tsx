@@ -2,6 +2,11 @@
 
 import { useState } from "react"
 
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
 import { useWorkflowRuns } from "@/features/workflows/components/workflow-runs-provider"
 import { InspectorPanel } from "@/features/workflows/components/inspector-panel"
 import { LogsPanel } from "@/features/workflows/components/logs-panel"
@@ -23,19 +28,25 @@ export function ConsolePanel() {
     : undefined
 
   return (
-    <div className="flex size-full min-h-0">
-      <div className={selectedStep ? "min-w-0 flex-1" : "size-full"}>
+    <ResizablePanelGroup
+      className="size-full"
+      orientation="horizontal"
+    >
+      <ResizablePanel minSize="12rem">
         <LogsPanel
           runs={runs}
           selectedStepId={selectedStepId}
           onSelectStep={selectStep}
         />
-      </div>
+      </ResizablePanel>
       {selectedStep && (
-        <div className="w-1/2 min-w-64">
-          <InspectorPanel step={selectedStep} />
-        </div>
+        <>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize="50%" minSize="16rem">
+            <InspectorPanel step={selectedStep} />
+          </ResizablePanel>
+        </>
       )}
-    </div>
+    </ResizablePanelGroup>
   )
 }
