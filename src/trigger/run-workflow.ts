@@ -1,4 +1,5 @@
 import toposort from "toposort"
+import Browserbase from "@browserbasehq/sdk"
 import { logger, task } from "@trigger.dev/sdk"
 
 import { getWorkflow } from "@/features/workflows/data"
@@ -15,13 +16,29 @@ export const runWorkflowTask = task({
     const order = toposort(edges.map((edge) => [edge.source, edge.target]))
       .filter((id) => connected.has(id))
 
-    logger.log(`Running workflow ${workflow.name}`, { steps: order.length })
+    const instructions = order
+      .map((id) => byId.get(id)?.data)
+      .filter((data): data is NonNullable<typeof data> => Boolean(data))
+      .map((data) => {
+        const values = Object.entries(data.values)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join("\n")
+        return `${data.title}${values ? `\n${values}` : ""}`
+      })
+      .join("\n\n")
 
-    for (const id of order) {
-      const node = byId.get(id)
-      if (node) logger.log(`Running step: ${node.data.title}`)
-    }
+    const browserbase = new Browserbase({
+      apiKey: process.env.BROWSERBASE_API_KEY,
+    })
+    const run = await browserbase.agents.runs.create({
+      task: `Execute the following workflow in a web browser. Follow the steps in order, use only the information provided, and stop if a required value is missing.\n\nWorkflow: ${workflow.name}\n\n${instructions}`,
+    })
 
-    return { steps: order.length }
+    logger.log(`Started Browserbase run for workflow ${workflow.name}`, {
+      browserbaseRunId: run.runId,
+      steps: order.length,
+    })
+
+    return { browserbaseRunId: run.runId, steps: order.length }
   },
 })
