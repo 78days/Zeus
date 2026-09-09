@@ -26,8 +26,8 @@ function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
     <div
       className={cn(
         "min-w-50 max-w-80 rounded-(--radius) border-2 border-border bg-card text-card-foreground",
-        isRunning && "border-blue-500",
-        isFailed && "border-destructive",
+        isRunning && "border-blue-500 bg-blue-500/10",
+        isFailed && "border-destructive bg-destructive/10",
         selected && "ring-2 ring-ring ring-offset-2 ring-offset-background"
       )}
     >
@@ -44,7 +44,9 @@ function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
           <div
             className={cn(
               "flex size-7 shrink-0 items-center justify-center rounded-md",
-              def.accent
+              def.accent,
+              isRunning && "bg-blue-500 text-white",
+              isFailed && "bg-destructive text-destructive-foreground"
             )}
           >
             {isRunning ? <Spinner className="size-4" /> : <Icon className="size-4" />}
