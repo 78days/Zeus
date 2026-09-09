@@ -6,6 +6,9 @@ import {
   type ReactNode,
 } from "react"
 import { useRealtimeRunsWithTag } from "@trigger.dev/react-hooks"
+import { useEffect } from "react"
+
+import * as Sentry from "@sentry/nextjs"
 
 import type { RunStep } from "@/src/trigger/run-workflow"
 
@@ -41,9 +44,15 @@ export function WorkflowRunsProvider({
     { accessToken: publicAccessToken }
   )
 
-  if (error) {
-    console.error("Failed to subscribe to workflow runs", error)
-  }
+  useEffect(() => {
+    if (!error) return
+
+    Sentry.withScope((scope) => {
+      scope.setTag("operation", "trigger.realtime-runs")
+      scope.setExtra("workflowId", workflowId)
+      Sentry.captureException(error)
+    })
+  }, [error, workflowId])
 
   const workflowRuns = (runs as Array<Omit<WorkflowRun, "steps" | "sessionId">>).map(
     (run) => ({

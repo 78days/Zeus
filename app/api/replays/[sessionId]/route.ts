@@ -1,6 +1,8 @@
 import { auth } from "@clerk/nextjs/server"
 import Browserbase from "@browserbasehq/sdk"
 
+import { reportError } from "@/lib/sentry"
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ sessionId: string }> }
@@ -23,7 +25,7 @@ export async function GET(
     session = await browserbase.sessions.retrieve(sessionId)
   } catch (error) {
     if (getStatus(error) === 404) return new Response("Not found", { status: 404 })
-    console.error("Failed to retrieve Browserbase session", error)
+    reportError(error, { operation: "replays.retrieve-session", sessionId, orgId })
     return new Response("Failed to retrieve replay", { status: 502 })
   }
 
@@ -51,7 +53,7 @@ export async function GET(
     const status = getStatus(error)
     if (status === 404 || status === 409 || status === 425) return notReady()
 
-    console.error("Failed to retrieve Browserbase replay", error)
+    reportError(error, { operation: "replays.retrieve-playlist", sessionId, orgId })
     return new Response("Failed to retrieve replay", { status: 502 })
   }
 }

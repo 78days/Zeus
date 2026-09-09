@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Hls from "hls.js"
+import * as Sentry from "@sentry/nextjs"
 
 export function SessionReplay({ sessionId }: { sessionId: string }) {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -29,6 +30,11 @@ export function SessionReplay({ sessionId }: { sessionId: string }) {
           setPlaylistUrl(url)
         }
       } catch (cause) {
+        Sentry.withScope((scope) => {
+          scope.setTag("operation", "replays.load-client")
+          scope.setExtra("sessionId", sessionId)
+          Sentry.captureException(cause)
+        })
         if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause))
       }
     }

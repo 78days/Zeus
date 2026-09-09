@@ -1,6 +1,8 @@
 "use client"
 
 import { AlertTriangle } from "lucide-react"
+import * as Sentry from "@sentry/nextjs"
+import { useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -13,11 +15,16 @@ import {
 } from "@/components/ui/empty"
 
 export default function Error({
+  error,
   unstable_retry,
 }: {
   error: Error & { digest?: string }
   unstable_retry: () => void
 }) {
+  useEffect(() => {
+    Sentry.captureException(error)
+  }, [error])
+
   return (
     <div className="flex min-h-0 flex-1">
       <Empty className="rounded-none">

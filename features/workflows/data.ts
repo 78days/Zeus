@@ -3,6 +3,7 @@ import { and, desc, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { WorkflowGraph, workflows } from "@/lib/db/schema"
 import { validateGraph } from "@/features/workflows/lib/validate-graph"
+import { reportError } from "@/lib/sentry"
 
 function isTransientDatabaseError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
@@ -17,7 +18,10 @@ async function withDatabaseRetry<T>(operation: () => Promise<T>) {
     try {
       return await operation()
     } catch (error) {
-      if (attempt >= 2 || !isTransientDatabaseError(error)) throw error
+      if (attempt >= 2 || !isTransientDatabaseError(error)) {
+        reportError(error, { operation: "database.query", attempt })
+        throw error
+      }
       await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt))
     }
   }

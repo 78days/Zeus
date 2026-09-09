@@ -8,6 +8,7 @@ import { redirect } from "next/navigation"
 import type { runWorkflowTask } from "@/src/trigger/run-workflow"
 
 import { liveblocks } from "@/lib/liveblocks"
+import { reportError } from "@/lib/sentry"
 import { createWorkflow, deleteWorkflow, saveWorkflowGraph } from "@/features/workflows/data"
 import type { WorkflowGraph } from "@/lib/db/schema"
 
@@ -22,7 +23,13 @@ export async function createWorkflowAction(name: string) {
     throw new Error("An organization Pro plan is required to create workflows")
   }
 
-  const workflow = await createWorkflow(orgId, name)
+  let workflow
+  try {
+    workflow = await createWorkflow(orgId, name)
+  } catch (error) {
+    reportError(error, { operation: "workflows.create", orgId })
+    throw error
+  }
 
   revalidatePath("/workflows", "layout")
   redirect(`/workflows/${workflow.id}`)
@@ -35,14 +42,25 @@ export async function deleteWorkflowAction(id: string) {
     throw new Error("No active organization")
   }
 
-  const workflow = await deleteWorkflow(orgId, id)
+  let workflow
+  try {
+    workflow = await deleteWorkflow(orgId, id)
+  } catch (error) {
+    reportError(error, { operation: "workflows.delete", orgId, workflowId: id })
+    throw error
+  }
 
   if (!workflow) {
     throw new Error("Workflow not found")
   }
 
   // The workflow id doubles as its Liveblocks room id — clean it up too.
-  await liveblocks.deleteRoom(id)
+  try {
+    await liveblocks.deleteRoom(id)
+  } catch (error) {
+    reportError(error, { operation: "liveblocks.delete-room", orgId, workflowId: id })
+    throw error
+  }
 
   revalidatePath("/workflows", "layout")
   redirect("/")
@@ -61,13 +79,24 @@ export async function runWorkflowAction({
     throw new Error("No active organization")
   }
 
-  await saveWorkflowGraph({ orgId, id, graph })
+  try {
+    await saveWorkflowGraph({ orgId, id, graph })
+  } catch (error) {
+    reportError(error, { operation: "workflows.save-graph", orgId, workflowId: id })
+    throw error
+  }
 
-  const handle = await tasks.trigger<typeof runWorkflowTask>(
-    "run-workflow",
-    { workflowId: id, orgId },
-    { tags: [`workflow:${id}`] }
-  )
+  let handle
+  try {
+    handle = await tasks.trigger<typeof runWorkflowTask>(
+      "run-workflow",
+      { workflowId: id, orgId },
+      { tags: [`workflow:${id}`] }
+    )
+  } catch (error) {
+    reportError(error, { operation: "workflows.trigger-run", orgId, workflowId: id })
+    throw error
+  }
 
   return handle
 }
@@ -75,5 +104,10 @@ export async function runWorkflowAction({
 export async function cancelWorkflowRunAction(runId: string) {
   const { orgId } = await auth()
   if (!orgId) throw new Error("No active organization")
-  await runs.cancel(runId)
+  try {
+    await runs.cancel(runId)
+  } catch (error) {
+    reportError(error, { operation: "workflows.cancel-run", orgId, runId })
+    throw error
+  }
 }

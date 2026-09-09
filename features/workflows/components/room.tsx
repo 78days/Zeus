@@ -1,6 +1,7 @@
 "use client"
 
 import { ReactNode } from "react";
+import * as Sentry from "@sentry/nextjs"
 import {
   LiveblocksProvider,
   RoomProvider,
@@ -27,8 +28,13 @@ export function Room({
           if (!response.ok) return undefined;
 
           return await response.json();
-        } catch {
-          return undefined;
+         } catch (error) {
+           Sentry.withScope((scope) => {
+             scope.setTag("operation", "liveblocks.resolve-users-client")
+             scope.setExtra("userCount", userIds.length)
+             Sentry.captureException(error)
+           })
+           return undefined;
         }
       }}
     >

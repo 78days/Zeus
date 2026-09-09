@@ -1,4 +1,6 @@
 import { defineConfig } from "@trigger.dev/sdk";
+import { esbuildPlugin } from "@trigger.dev/build/extensions";
+import { sentryEsbuildPlugin } from "@sentry/esbuild-plugin";
 
 export default defineConfig({
   project: "proj_lempujqimjilnvqcosba",
@@ -20,4 +22,17 @@ export default defineConfig({
   },
 
   dirs: ["./src/trigger"],
+
+  build: {
+    extensions: [
+      esbuildPlugin(
+        sentryEsbuildPlugin({
+          org: process.env.SENTRY_ORG ?? "zeus-34",
+          project: process.env.SENTRY_PROJECT ?? "zeus",
+          authToken: process.env.SENTRY_AUTH_TOKEN,
+        }),
+        { placement: "last", target: "deploy" }
+      ),
+    ],
+  },
 });
