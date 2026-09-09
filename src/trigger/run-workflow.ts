@@ -1,9 +1,14 @@
 import toposort from "toposort"
-import { logger, task } from "@trigger.dev/sdk"
+import { logger, metadata, task } from "@trigger.dev/sdk"
 import { browserbase, Stagehand } from "@browserbasehq/stagehand"
 import { nodeExecutors } from "@/features/workflows/nodes/node-executors"
 import { getWorkflow } from "@/features/workflows/data"
 import { interpolate } from "@/features/workflows/lib/interpolate"
+
+export type RunStep = {
+  id: string
+  status: "pending" | "running" | "done" | "failed"
+}
 
 // The Trigger.dev task the Run button fires. It loads the saved graph, works out
 // what order the nodes should run in, and walks them. For now each node just
@@ -23,6 +28,13 @@ export const runWorkflowTask = task({
     const connected = new Set(edges.flatMap((e) => [e.source, e.target]))
     const order = toposort(edges.map((e) => [e.source, e.target]))
       .filter((id) => connected.has(id))
+    const steps: RunStep[] = order.map((id) => ({ id, status: "pending" }))
+
+    const publishSteps = () => {
+      metadata.set("steps", [...steps])
+    }
+
+    publishSteps()
 
     logger.log(`Running workflow ${workflow.name}`, { steps: order.length })
 
@@ -55,6 +67,11 @@ export const runWorkflowTask = task({
         const node = byId.get(id)
         if (!node) continue
         logger.log(`Running step: ${node.data.title}`)
+        const stepIndex = steps.findIndex((step) => step.id === id)
+        steps[stepIndex] = { id, status: "running" }
+        publishSteps()
+        await metadata.flush()
+
         const executor = nodeExecutors[node.data.type]
         const values = Object.fromEntries(
           Object.entries(node.data.values).map(([key, value]) => [
@@ -62,15 +79,24 @@ export const runWorkflowTask = task({
             interpolate(value, outputs),
           ])
         )
-        outputs[id] = executor
-          ? await executor({ values, getStagehand })
-          : undefined
+        try {
+          outputs[id] = executor
+            ? await executor({ values, getStagehand })
+            : undefined
+          steps[stepIndex] = { id, status: "done" }
+          publishSteps()
+        } catch (error) {
+          steps[stepIndex] = { id, status: "failed" }
+          publishSteps()
+          await metadata.flush()
+          throw error
+        }
       }
     } finally {
       await stagehand?.close()
       await browser?.close()
     }
 
-    return { steps: order.length }
+    return { steps }
   },
 })
