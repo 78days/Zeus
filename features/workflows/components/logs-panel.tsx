@@ -19,7 +19,7 @@ export function LogsPanel({
 }: {
   runs: WorkflowRun[]
   selection: ConsoleSelection | undefined
-  onSelect: (selection: ConsoleSelection) => void
+  onSelect: (selection: ConsoleSelection | undefined) => void
 }) {
   const sortedRuns = [...runs].sort(
     (a, b) =>
@@ -98,7 +98,13 @@ export function LogsPanel({
                         selection.runId === run.id &&
                         "bg-muted"
                     )}
-                    onClick={() => onSelect({ type: "replay", runId: run.id })}
+                    onClick={() =>
+                      onSelect(
+                        selection?.type === "replay" && selection.runId === run.id
+                          ? undefined
+                          : { type: "replay", runId: run.id }
+                      )
+                    }
                   >
                     <span className="flex size-5 shrink-0 items-center justify-center rounded-sm bg-muted-foreground/15 text-muted-foreground">
                       <Play className="size-3" />
