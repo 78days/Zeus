@@ -4,6 +4,8 @@ import { CircleAlert } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import type { RunStep } from "@/src/trigger/run-workflow"
+import { NodeIcon } from "@/features/workflows/components/node-icon"
+import type { NodeType } from "@/features/workflows/nodes/node-registry"
 
 export function InspectorPanel({ step }: { step: RunStep }) {
   const error = step.status === "failed" ? step.error : undefined
@@ -12,6 +14,10 @@ export function InspectorPanel({ step }: { step: RunStep }) {
   return (
     <div className="flex size-full min-h-0 flex-col border-l border-border bg-background">
       <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3 text-xs font-semibold">
+        <NodeIcon
+          type={step.nodeType as NodeType}
+          running={step.status === "running"}
+        />
         <span className="min-w-0 flex-1 truncate">{step.title}</span>
         <span
           className={cn(

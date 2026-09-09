@@ -3,9 +3,8 @@
 import prettyMs from "pretty-ms"
 import { Check, CircleAlert } from "lucide-react"
 
-import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
-import { NodeIcon } from "@/features/workflows/components/right-sidebar"
+import { NodeIcon } from "@/features/workflows/components/node-icon"
 import type { WorkflowRun } from "@/features/workflows/components/workflow-runs-provider"
 import type { NodeType } from "@/features/workflows/nodes/node-registry"
 
@@ -54,11 +53,12 @@ export function LogsPanel({
                     )}
                     onClick={() => onSelectStep(`${run.id}:${step.id}`)}
                   >
-                    <StepStatus status={step.status} />
                     <NodeIcon
                       type={step.nodeType as NodeType}
                       className="size-5 rounded-sm"
+                      running={step.status === "running"}
                     />
+                    <StepStatus status={step.status} />
                     <span
                       className={cn(
                         "min-w-0 flex-1 truncate",
@@ -105,7 +105,7 @@ function StepStatus({
 }: {
   status: "pending" | "running" | "done" | "failed"
 }) {
-  if (status === "running") return <Spinner className="size-3.5 text-blue-500" />
+  if (status === "running") return null
   if (status === "failed") {
     return <CircleAlert className="size-3.5 text-destructive" />
   }

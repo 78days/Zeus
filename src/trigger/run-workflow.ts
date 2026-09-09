@@ -98,15 +98,27 @@ export const runWorkflowTask = task({
 
         try {
           const executor = nodeExecutors[node.data.type]
+          if (!executor) {
+            const finishedAt = new Date().toISOString()
+            steps[stepIndex] = {
+              ...steps[stepIndex],
+              status: "done",
+              finishedAt,
+              durationMs:
+                new Date(finishedAt).getTime() - new Date(startedAt).getTime(),
+            }
+            publishSteps()
+            await metadata.flush()
+            continue
+          }
+
           const values = Object.fromEntries(
             Object.entries(node.data.values).map(([key, value]) => [
               key,
               interpolate(value, outputs),
             ])
           )
-          const output = executor
-            ? await executor({ values, getStagehand })
-            : undefined
+          const output = await executor({ values, getStagehand })
           outputs[id] = output
           const finishedAt = new Date().toISOString()
           steps[stepIndex] = {
