@@ -1,21 +1,25 @@
 "use client"
 
 import prettyMs from "pretty-ms"
-import { Check, CircleAlert } from "lucide-react"
+import { Check, CircleAlert, Play } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { NodeIcon } from "@/features/workflows/components/node-icon"
 import type { WorkflowRun } from "@/features/workflows/components/workflow-runs-provider"
 import type { NodeType } from "@/features/workflows/nodes/node-registry"
 
+export type ConsoleSelection =
+  | { type: "step"; runId: string; nodeId: string }
+  | { type: "replay"; runId: string }
+
 export function LogsPanel({
   runs,
-  selectedStepId,
-  onSelectStep,
+  selection,
+  onSelect,
 }: {
   runs: WorkflowRun[]
-  selectedStepId: string | undefined
-  onSelectStep: (stepKey: string) => void
+  selection: ConsoleSelection | undefined
+  onSelect: (selection: ConsoleSelection) => void
 }) {
   const sortedRuns = [...runs].sort(
     (a, b) =>
@@ -44,14 +48,23 @@ export function LogsPanel({
                   <button
                     key={`${run.id}:${step.id}`}
                     type="button"
-                    aria-pressed={selectedStepId === `${run.id}:${step.id}`}
+                    aria-pressed={
+                      selection?.type === "step" &&
+                      selection.runId === run.id &&
+                      selection.nodeId === step.id
+                    }
                     className={cn(
                       "flex w-full items-center gap-2 px-4 py-1.5 text-left text-xs transition-colors hover:bg-muted/60",
-                      selectedStepId === `${run.id}:${step.id}` && "bg-muted",
+                      selection?.type === "step" &&
+                        selection.runId === run.id &&
+                        selection.nodeId === step.id &&
+                        "bg-muted",
                       step.status === "pending" && "opacity-50",
                       step.status === "failed" && "text-destructive"
                     )}
-                    onClick={() => onSelectStep(`${run.id}:${step.id}`)}
+                    onClick={() =>
+                      onSelect({ type: "step", runId: run.id, nodeId: step.id })
+                    }
                   >
                     <NodeIcon
                       type={step.nodeType as NodeType}
@@ -73,6 +86,26 @@ export function LogsPanel({
                     </span>
                   </button>
                 ))}
+                {run.sessionId && isFinished(run.status) && (
+                  <button
+                    type="button"
+                    aria-pressed={
+                      selection?.type === "replay" && selection.runId === run.id
+                    }
+                    className={cn(
+                      "flex w-full items-center gap-2 px-4 py-1.5 text-left text-xs transition-colors hover:bg-muted/60",
+                      selection?.type === "replay" &&
+                        selection.runId === run.id &&
+                        "bg-muted"
+                    )}
+                    onClick={() => onSelect({ type: "replay", runId: run.id })}
+                  >
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-sm bg-muted-foreground/15 text-muted-foreground">
+                      <Play className="size-3" />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">Replay</span>
+                  </button>
+                )}
               </div>
             </div>
           ))
@@ -117,4 +150,10 @@ function formatDuration(durationMs: number | undefined, status: string) {
   if (durationMs !== undefined) return prettyMs(durationMs, { compact: true })
   if (status === "running") return "..."
   return "-"
+}
+
+function isFinished(status: string) {
+  return !["QUEUED", "EXECUTING", "PENDING", "RUNNING"].includes(
+    status.toUpperCase()
+  )
 }

@@ -6,8 +6,18 @@ import { cn } from "@/lib/utils"
 import type { RunStep } from "@/src/trigger/run-workflow"
 import { NodeIcon } from "@/features/workflows/components/node-icon"
 import type { NodeType } from "@/features/workflows/nodes/node-registry"
+import { SessionReplay } from "@/features/workflows/components/session-replay"
 
-export function InspectorPanel({ step }: { step: RunStep }) {
+export function InspectorPanel({
+  step,
+  sessionId,
+}: {
+  step?: RunStep
+  sessionId?: string
+}) {
+  if (sessionId) return <SessionReplay sessionId={sessionId} />
+  if (!step) return null
+
   const error = step.status === "failed" ? step.error : undefined
   const formattedOutput = formatOutput(step.output)
 

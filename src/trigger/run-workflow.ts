@@ -63,6 +63,7 @@ export const runWorkflowTask = task({
     // separate provider key is needed.
     let stagehand: Stagehand | undefined
     let browser: Awaited<ReturnType<typeof browserbase.launch>> | undefined
+    let sessionId: string | undefined
     const outputs: Record<string, unknown> = {}
     const getStagehand = async () => {
       if (stagehand) return stagehand
@@ -74,7 +75,9 @@ export const runWorkflowTask = task({
         // A pre-uploaded extension avoids runtime uploads in Trigger deployments,
         // where package assets may not be available to the worker.
         extensionId: process.env.BROWSERBASE_EXTENSION_ID,
+        userMetadata: { orgId, workflowId },
       })
+      sessionId = browser.sessionId
       stagehand = await Stagehand.create({
         browser,
         model: {
@@ -155,7 +158,7 @@ export const runWorkflowTask = task({
       await browser?.close()
     }
 
-    return { steps }
+    return { steps, sessionId }
   },
 })
 

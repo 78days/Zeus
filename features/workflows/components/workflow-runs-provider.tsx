@@ -16,6 +16,7 @@ export type WorkflowRun = {
   output?: unknown
   metadata?: Record<string, unknown>
   steps: RunStep[]
+  sessionId?: string
 }
 
 export type WorkflowRunsContextValue = {
@@ -44,10 +45,11 @@ export function WorkflowRunsProvider({
     console.error("Failed to subscribe to workflow runs", error)
   }
 
-  const workflowRuns = (runs as Array<Omit<WorkflowRun, "steps">>).map(
+  const workflowRuns = (runs as Array<Omit<WorkflowRun, "steps" | "sessionId">>).map(
     (run) => ({
       ...run,
       steps: readRunSteps(run) ?? [],
+      sessionId: readSessionId(run.output),
     })
   )
 
@@ -98,20 +100,33 @@ function readRunSteps(
   return undefined
 }
 
+function readSessionId(value: unknown): string | undefined {
+  const parsed = parseJson(value)
+  const sessionId =
+    typeof parsed === "object" && parsed !== null
+      ? (parsed as { sessionId?: unknown }).sessionId
+      : undefined
+
+  return typeof sessionId === "string" && sessionId.length > 0
+    ? sessionId
+    : undefined
+}
+
 function readSteps(value: unknown) {
-  const parsed =
-    typeof value === "string"
-      ? (() => {
-          try {
-            return JSON.parse(value)
-          } catch {
-            return undefined
-          }
-        })()
-      : value
+  const parsed = parseJson(value)
 
   if (Array.isArray(parsed)) return parsed
   return (parsed as { steps?: unknown } | undefined)?.steps
+}
+
+function parseJson(value: unknown) {
+  if (typeof value !== "string") return value
+
+  try {
+    return JSON.parse(value)
+  } catch {
+    return undefined
+  }
 }
 
 function isRunSteps(value: unknown): value is RunStep[] {
