@@ -3,6 +3,7 @@ import {
   Bot,
   Braces,
   Globe,
+  Mail,
   MousePointer,
   MousePointerClick,
   ScanSearch,
@@ -116,6 +117,35 @@ export const nodeRegistry = {
       },
     ],
     outputs: [{ path: "matches", label: "Matches" }],
+  },
+  "send-email": {
+    type: "send-email",
+    kind: "action",
+    label: "Send Email",
+    icon: Mail,
+    accent: "bg-rose-500 text-white",
+    fields: [
+      {
+        key: "to",
+        label: "To",
+        placeholder: "recipient@example.com",
+        required: true,
+      },
+      {
+        key: "subject",
+        label: "Subject",
+        placeholder: "Email subject",
+        required: true,
+      },
+      {
+        key: "body",
+        label: "Body",
+        placeholder: "Email body",
+        multiline: true,
+        required: true,
+      },
+    ],
+    outputs: [{ path: "id", label: "Email ID" }],
   },
   "open-url": {
     type: "open-url",
