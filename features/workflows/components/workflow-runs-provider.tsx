@@ -12,7 +12,7 @@ import type { RunStep } from "@/src/trigger/run-workflow"
 type WorkflowRun = {
   id: string
   status: string
-  updatedAt: Date
+  updatedAt: Date | string
   output?: unknown
   metadata?: Record<string, unknown>
 }
@@ -34,10 +34,14 @@ export function WorkflowRunsProvider({
   publicAccessToken: string
   children: ReactNode
 }) {
-  const { runs } = useRealtimeRunsWithTag(
+  const { runs, error } = useRealtimeRunsWithTag(
     `workflow:${workflowId}`,
     { accessToken: publicAccessToken }
   )
+
+  if (error) {
+    console.error("Failed to subscribe to workflow runs", error)
+  }
 
   return (
     <WorkflowRunsContext.Provider value={{ runs: runs as WorkflowRun[] }}>
@@ -53,13 +57,14 @@ export function useLatestRunSteps(): { steps: RunStep[]; live: boolean } {
   }
 
   const latestRun = [...context.runs].sort(
-    (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
+    (a, b) =>
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   )[0]
 
   if (!latestRun) return { steps: [], live: false }
 
-  const outputSteps = (latestRun.output as { steps?: unknown } | undefined)?.steps
-  const metadataSteps = latestRun.metadata?.steps
+  const outputSteps = readSteps(latestRun.output)
+  const metadataSteps = readSteps(latestRun.metadata)
   const steps = isRunSteps(outputSteps)
     ? outputSteps
     : isRunSteps(metadataSteps)
@@ -68,8 +73,23 @@ export function useLatestRunSteps(): { steps: RunStep[]; live: boolean } {
 
   return {
     steps,
-    live: latestRun.status === "QUEUED" || latestRun.status === "EXECUTING",
+    live: ["QUEUED", "EXECUTING"].includes(latestRun.status.toUpperCase()),
   }
+}
+
+function readSteps(value: unknown) {
+  const parsed =
+    typeof value === "string"
+      ? (() => {
+          try {
+            return JSON.parse(value)
+          } catch {
+            return undefined
+          }
+        })()
+      : value
+
+  return (parsed as { steps?: unknown } | undefined)?.steps
 }
 
 function isRunSteps(value: unknown): value is RunStep[] {

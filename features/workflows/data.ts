@@ -4,6 +4,25 @@ import { db } from "@/lib/db"
 import { WorkflowGraph, workflows } from "@/lib/db/schema"
 import { validateGraph } from "@/features/workflows/lib/validate-graph"
 
+function isTransientDatabaseError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  const cause = error instanceof Error && error.cause ? String(error.cause) : ""
+  return /fetch failed|ETIMEDOUT|ECONNRESET|ENETUNREACH/i.test(
+    `${message} ${cause}`
+  )
+}
+
+async function withDatabaseRetry<T>(operation: () => Promise<T>) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await operation()
+    } catch (error) {
+      if (attempt >= 2 || !isTransientDatabaseError(error)) throw error
+      await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt))
+    }
+  }
+}
+
 export async function saveWorkflowGraph({
   orgId,
   id,
@@ -15,25 +34,31 @@ export async function saveWorkflowGraph({
 }) {
   const problems = validateGraph(graph)
   if (problems.length > 0) throw new Error(problems.join(" "))
-  await db
-    .update(workflows)
-    .set({ graph, updatedAt: new Date() })
-    .where(and(eq(workflows.id, id), eq(workflows.orgId, orgId)))
+  await withDatabaseRetry(() =>
+    db
+      .update(workflows)
+      .set({ graph, updatedAt: new Date() })
+      .where(and(eq(workflows.id, id), eq(workflows.orgId, orgId)))
+  )
 }
 
 export function listWorkflows(orgId: string) {
-  return db
-    .select()
-    .from(workflows)
-    .where(eq(workflows.orgId, orgId))
-    .orderBy(desc(workflows.createdAt))
+  return withDatabaseRetry(() =>
+    db
+      .select()
+      .from(workflows)
+      .where(eq(workflows.orgId, orgId))
+      .orderBy(desc(workflows.createdAt))
+  )
 }
 
 export async function getWorkflow(orgId: string, id: string) {
-  const [workflow] = await db
-    .select()
-    .from(workflows)
-    .where(and(eq(workflows.id, id), eq(workflows.orgId, orgId)))
+  const [workflow] = await withDatabaseRetry(() =>
+    db
+      .select()
+      .from(workflows)
+      .where(and(eq(workflows.id, id), eq(workflows.orgId, orgId)))
+  )
 
   return workflow
 }
@@ -48,10 +73,12 @@ export async function createWorkflow(orgId: string, name: string) {
 }
 
 export async function deleteWorkflow(orgId: string, id: string) {
-  const [workflow] = await db
-    .delete(workflows)
-    .where(and(eq(workflows.id, id), eq(workflows.orgId, orgId)))
-    .returning()
+  const [workflow] = await withDatabaseRetry(() =>
+    db
+      .delete(workflows)
+      .where(and(eq(workflows.id, id), eq(workflows.orgId, orgId)))
+      .returning()
+  )
 
   return workflow
 }
