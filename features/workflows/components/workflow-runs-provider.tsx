@@ -9,15 +9,16 @@ import { useRealtimeRunsWithTag } from "@trigger.dev/react-hooks"
 
 import type { RunStep } from "@/src/trigger/run-workflow"
 
-type WorkflowRun = {
+export type WorkflowRun = {
   id: string
   status: string
   updatedAt: Date | string
   output?: unknown
   metadata?: Record<string, unknown>
+  steps: RunStep[]
 }
 
-type WorkflowRunsContextValue = {
+export type WorkflowRunsContextValue = {
   runs: WorkflowRun[]
 }
 
@@ -43,11 +44,27 @@ export function WorkflowRunsProvider({
     console.error("Failed to subscribe to workflow runs", error)
   }
 
+  const workflowRuns = (runs as Array<Omit<WorkflowRun, "steps">>).map(
+    (run) => ({
+      ...run,
+      steps: readRunSteps(run) ?? [],
+    })
+  )
+
   return (
-    <WorkflowRunsContext.Provider value={{ runs: runs as WorkflowRun[] }}>
+    <WorkflowRunsContext.Provider value={{ runs: workflowRuns }}>
       {children}
     </WorkflowRunsContext.Provider>
   )
+}
+
+export function useWorkflowRuns(): WorkflowRun[] {
+  const context = useContext(WorkflowRunsContext)
+  if (!context) {
+    throw new Error("useWorkflowRuns must be used within WorkflowRunsProvider")
+  }
+
+  return context.runs
 }
 
 export function useLatestRunSteps(): { steps: RunStep[]; live: boolean } {
@@ -63,18 +80,22 @@ export function useLatestRunSteps(): { steps: RunStep[]; live: boolean } {
 
   if (!latestRun) return { steps: [], live: false }
 
-  const outputSteps = readSteps(latestRun.output)
-  const metadataSteps = readSteps(latestRun.metadata)
-  const steps = isRunSteps(outputSteps)
-    ? outputSteps
-    : isRunSteps(metadataSteps)
-      ? metadataSteps
-      : []
+  const steps = latestRun.steps
 
   return {
     steps,
     live: ["QUEUED", "EXECUTING"].includes(latestRun.status.toUpperCase()),
   }
+}
+
+function readRunSteps(
+  run: { output?: unknown; metadata?: unknown }
+): RunStep[] | undefined {
+  const outputSteps = readSteps(run.output)
+  const metadataSteps = readSteps(run.metadata)
+  if (isRunSteps(metadataSteps)) return metadataSteps
+  if (isRunSteps(outputSteps)) return outputSteps
+  return undefined
 }
 
 function readSteps(value: unknown) {
@@ -89,6 +110,7 @@ function readSteps(value: unknown) {
         })()
       : value
 
+  if (Array.isArray(parsed)) return parsed
   return (parsed as { steps?: unknown } | undefined)?.steps
 }
 
@@ -100,6 +122,8 @@ function isRunSteps(value: unknown): value is RunStep[] {
         typeof step === "object" &&
         step !== null &&
         typeof (step as RunStep).id === "string" &&
+        typeof (step as RunStep).nodeType === "string" &&
+        typeof (step as RunStep).title === "string" &&
         ["pending", "running", "done", "failed"].includes(
           (step as RunStep).status
         )

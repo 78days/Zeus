@@ -7,7 +7,18 @@ import { interpolate } from "@/features/workflows/lib/interpolate"
 
 export type RunStep = {
   id: string
+  nodeType: string
+  title: string
   status: "pending" | "running" | "done" | "failed"
+  startedAt?: string
+  finishedAt?: string
+  durationMs?: number
+  output?: unknown
+  error?: {
+    name: string
+    message: string
+    stack?: string
+  }
 }
 
 // The Trigger.dev task the Run button fires. It loads the saved graph, works out
@@ -28,10 +39,18 @@ export const runWorkflowTask = task({
     const connected = new Set(edges.flatMap((e) => [e.source, e.target]))
     const order = toposort(edges.map((e) => [e.source, e.target]))
       .filter((id) => connected.has(id))
-    const steps: RunStep[] = order.map((id) => ({ id, status: "pending" }))
+    const steps: RunStep[] = order.map((id) => {
+      const node = byId.get(id)
+      return {
+        id,
+        nodeType: node?.data.type ?? "unknown",
+        title: node?.data.title ?? id,
+        status: "pending",
+      }
+    })
 
     const publishSteps = () => {
-      metadata.set("steps", [...steps])
+      metadata.set("steps", [...steps] as never)
     }
 
     publishSteps()
@@ -68,25 +87,47 @@ export const runWorkflowTask = task({
         if (!node) continue
         logger.log(`Running step: ${node.data.title}`)
         const stepIndex = steps.findIndex((step) => step.id === id)
-        steps[stepIndex] = { id, status: "running" }
+        const startedAt = new Date().toISOString()
+        steps[stepIndex] = {
+          ...steps[stepIndex],
+          status: "running",
+          startedAt,
+        }
         publishSteps()
         await metadata.flush()
 
-        const executor = nodeExecutors[node.data.type]
-        const values = Object.fromEntries(
-          Object.entries(node.data.values).map(([key, value]) => [
-            key,
-            interpolate(value, outputs),
-          ])
-        )
         try {
-          outputs[id] = executor
+          const executor = nodeExecutors[node.data.type]
+          const values = Object.fromEntries(
+            Object.entries(node.data.values).map(([key, value]) => [
+              key,
+              interpolate(value, outputs),
+            ])
+          )
+          const output = executor
             ? await executor({ values, getStagehand })
             : undefined
-          steps[stepIndex] = { id, status: "done" }
+          outputs[id] = output
+          const finishedAt = new Date().toISOString()
+          steps[stepIndex] = {
+            ...steps[stepIndex],
+            status: "done",
+            finishedAt,
+            durationMs:
+              new Date(finishedAt).getTime() - new Date(startedAt).getTime(),
+            output,
+          }
           publishSteps()
         } catch (error) {
-          steps[stepIndex] = { id, status: "failed" }
+          const finishedAt = new Date().toISOString()
+          steps[stepIndex] = {
+            ...steps[stepIndex],
+            status: "failed",
+            finishedAt,
+            durationMs:
+              new Date(finishedAt).getTime() - new Date(startedAt).getTime(),
+            error: serializeError(error),
+          }
           publishSteps()
           await metadata.flush()
           throw error
@@ -100,3 +141,18 @@ export const runWorkflowTask = task({
     return { steps }
   },
 })
+
+function serializeError(error: unknown): NonNullable<RunStep["error"]> {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      ...(error.stack ? { stack: error.stack } : {}),
+    }
+  }
+
+  return {
+    name: "Error",
+    message: typeof error === "string" ? error : String(error),
+  }
+}
