@@ -4,6 +4,7 @@ import type {
   ActionNodeType,
   NodeType,
 } from "@/features/workflows/nodes/node-registry"
+import { agent } from "./agent"
 import { act } from "./act"
 import { extract } from "./extract"
 import { openUrl } from "./open-url"
@@ -17,6 +18,8 @@ export type NodeContext = {
 export type NodeExecutor = (ctx: NodeContext) => Promise<unknown>
 
 export const nodeExecutors: Partial<Record<NodeType, NodeExecutor>> = {
+  agent: async ({ values, getStagehand }) =>
+    agent({ stagehand: await getStagehand(), instruction: values.instruction }),
   act: async ({ values, getStagehand }) =>
     act({ stagehand: await getStagehand(), instruction: values.instruction }),
   extract: async ({ values, getStagehand }) =>

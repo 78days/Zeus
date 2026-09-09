@@ -1,5 +1,6 @@
 import type { Node } from "@xyflow/react"
 import {
+  Bot,
   Braces,
   Globe,
   MousePointer,
@@ -39,6 +40,27 @@ export const nodeRegistry = {
     accent: "bg-blue-500 text-white",
     fields: [],
     outputs : []
+  },
+  agent: {
+    type: "agent",
+    kind: "action",
+    label: "Agent",
+    icon: Bot,
+    accent: "bg-fuchsia-500 text-white",
+    fields: [
+      {
+        key: "instruction",
+        label: "Instruction",
+        placeholder: "Complete the checkout process",
+        multiline: true,
+        required: true,
+      },
+    ],
+    outputs: [
+      { path: "success", label: "Success" },
+      { path: "message", label: "Message" },
+      { path: "completed", label: "Completed" },
+    ],
   },
   act: {
     type: "act",
