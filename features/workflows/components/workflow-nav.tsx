@@ -1,6 +1,6 @@
 "use client"
 
-import { LockKeyhole, Plus, Workflow } from "lucide-react"
+import { CalendarClock, LockKeyhole, Plus, Workflow } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTransition } from "react"
@@ -86,6 +86,9 @@ export function Workflownav({
                     <Link href={`/workflows/${workflow.id}`}>
                       <Workflow />
                       <span>{workflow.name}</span>
+                      {workflow.scheduleActive && (
+                        <CalendarClock className="ml-auto size-3.5" />
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -101,7 +104,9 @@ export function Workflownav({
     <SidebarGroup>
       <SidebarGroupLabel>Workflows</SidebarGroupLabel>
       <SidebarGroupAction
-        aria-label={isLocked ? "Upgrade to create a workflow" : "Create workflow"}
+        aria-label={
+          isLocked ? "Upgrade to create a workflow" : "Create workflow"
+        }
         disabled={isCreating || !isLoaded}
         title={isLocked ? "Upgrade to create a workflow" : "Create workflow"}
         onClick={handleCreateWorkflow}
@@ -120,6 +125,9 @@ export function Workflownav({
                 <Link href={`/workflows/${workflow.id}`}>
                   <Workflow />
                   <span>{workflow.name}</span>
+                  {workflow.scheduleActive && (
+                    <CalendarClock className="ml-auto size-3.5" />
+                  )}
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

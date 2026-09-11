@@ -9,7 +9,13 @@ import { RightSidebar } from "@/features/workflows/components/right-sidebar"
 import { WorkflowCanvas } from "@/features/workflows/components/workflow-canvas"
 import { ConsolePanel } from "@/features/workflows/components/console-panel"
 
-export function WorkflowShell({ workflowId }: { workflowId: string }) {
+export function WorkflowShell({
+  workflowId,
+  schedule,
+}: {
+  workflowId: string
+  schedule?: { cron: string | null; timezone: string | null; active: boolean }
+}) {
   return (
     <ResizablePanelGroup
       className="size-full"
@@ -29,7 +35,7 @@ export function WorkflowShell({ workflowId }: { workflowId: string }) {
       </ResizablePanel>
       <ResizableHandle withHandle />
       <ResizablePanel defaultSize="16rem" minSize="14rem" maxSize="36rem">
-        <RightSidebar workflowId={workflowId} />
+        <RightSidebar workflowId={workflowId} schedule={schedule} />
       </ResizablePanel>
     </ResizablePanelGroup>
   )

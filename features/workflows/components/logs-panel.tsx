@@ -22,21 +22,23 @@ export function LogsPanel({
   onSelect: (selection: ConsoleSelection | undefined) => void
 }) {
   const sortedRuns = [...runs].sort(
-    (a, b) =>
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   )
 
   return (
     <div className="flex size-full min-h-0 flex-col bg-background">
       <div className="flex h-9 shrink-0 items-center border-b border-border px-3 text-xs font-semibold">
-        Runs
+        Performed runs
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
         {sortedRuns.length === 0 ? (
           <p className="p-3 text-xs text-muted-foreground">No runs yet</p>
         ) : (
           sortedRuns.map((run) => (
-            <div key={run.id} className="border-b border-border last:border-b-0">
+            <div
+              key={run.id}
+              className="border-b border-border last:border-b-0"
+            >
               <div className="flex items-center justify-between gap-3 px-3 py-2">
                 <span className="truncate font-mono text-[10px] text-muted-foreground">
                   {run.id}
@@ -100,7 +102,8 @@ export function LogsPanel({
                     )}
                     onClick={() =>
                       onSelect(
-                        selection?.type === "replay" && selection.runId === run.id
+                        selection?.type === "replay" &&
+                          selection.runId === run.id
                           ? undefined
                           : { type: "replay", runId: run.id }
                       )
@@ -129,7 +132,7 @@ function RunStatus({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        "shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground",
+        "shrink-0 text-[10px] font-medium tracking-wide text-muted-foreground uppercase",
         active && "text-blue-500",
         failed && "text-destructive"
       )}
@@ -149,7 +152,9 @@ function StepStatus({
     return <CircleAlert className="size-3.5 text-destructive" />
   }
   if (status === "done") return <Check className="size-3.5 text-emerald-500" />
-  return <span className="size-3.5 shrink-0 rounded-full bg-muted-foreground/30" />
+  return (
+    <span className="size-3.5 shrink-0 rounded-full bg-muted-foreground/30" />
+  )
 }
 
 function formatDuration(durationMs: number | undefined, status: string) {

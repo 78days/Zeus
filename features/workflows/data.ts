@@ -67,6 +67,14 @@ export async function getWorkflow(orgId: string, id: string) {
   return workflow
 }
 
+export async function getWorkflowById(id: string) {
+  const [workflow] = await withDatabaseRetry(() =>
+    db.select().from(workflows).where(eq(workflows.id, id))
+  )
+
+  return workflow
+}
+
 export async function createWorkflow(orgId: string, name: string) {
   const [workflow] = await db
     .insert(workflows)
@@ -85,4 +93,33 @@ export async function deleteWorkflow(orgId: string, id: string) {
   )
 
   return workflow
+}
+
+export async function saveWorkflowSchedule({
+  orgId,
+  id,
+  scheduleId,
+  cron,
+  timezone,
+  active,
+}: {
+  orgId: string
+  id: string
+  scheduleId: string | null
+  cron: string | null
+  timezone: string | null
+  active: boolean
+}) {
+  await withDatabaseRetry(() =>
+    db
+      .update(workflows)
+      .set({
+        scheduleId,
+        scheduleCron: cron,
+        scheduleTimezone: timezone,
+        scheduleActive: active,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(workflows.id, id), eq(workflows.orgId, orgId)))
+  )
 }

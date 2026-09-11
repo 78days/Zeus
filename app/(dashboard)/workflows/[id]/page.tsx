@@ -15,11 +15,10 @@ export default async function WorkflowPage({
 }) {
   const { id } = await params
   const { orgId } = await auth()
-  if(!orgId) return notFound()
-
+  if (!orgId) return notFound()
 
   const workflow = await getWorkflow(orgId, id)
-  if(!workflow) return notFound()
+  if (!workflow) return notFound()
 
   const publicAccessToken = await triggerAuth.createPublicToken({
     expirationTime: "1h",
@@ -42,14 +41,20 @@ export default async function WorkflowPage({
   })
 
   return (
-
-    <Room roomId = {id}>
+    <Room roomId={id}>
       <WorkflowRunsProvider
         workflowId={id}
         publicAccessToken={publicAccessToken}
       >
         <ReactFlowProvider>
-          <WorkflowShell workflowId={id}/>
+          <WorkflowShell
+            workflowId={id}
+            schedule={{
+              cron: workflow.scheduleCron,
+              timezone: workflow.scheduleTimezone,
+              active: workflow.scheduleActive,
+            }}
+          />
         </ReactFlowProvider>
       </WorkflowRunsProvider>
     </Room>

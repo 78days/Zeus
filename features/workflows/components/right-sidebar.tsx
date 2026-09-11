@@ -1,8 +1,14 @@
 "use client"
 
-import { useRef, useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import { useReactFlow, useStore } from "@xyflow/react"
-import { LockKeyhole, MoreHorizontal, Play, Trash2 } from "lucide-react"
+import {
+  CalendarClock,
+  LockKeyhole,
+  MoreHorizontal,
+  Play,
+  Trash2,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -25,7 +31,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
-import { deleteWorkflowAction, runWorkflowAction } from "@/features/workflows/actions"
+import {
+  deleteWorkflowAction,
+  runWorkflowAction,
+  scheduleWorkflowAction,
+  unscheduleWorkflowAction,
+} from "@/features/workflows/actions"
 import { useOrgPro } from "@/features/workflows/hooks/use-org-pro"
 import { useUpstreamConnections } from "@/features/workflows/hooks/use-upstream-connections"
 import { validateGraph } from "@/features/workflows/lib/validate-graph"
@@ -119,10 +130,18 @@ function Field({
 
 // The Editor tab: one input per field on the selected node, or an empty state.
 function Inspector({ node }: { node: StepNodeType | undefined }) {
-  const { deleteElements, updateNodeData } = useReactFlow<StepNodeType>()
+  const { deleteElements, updateNode, updateNodeData } =
+    useReactFlow<StepNodeType>()
   const connections = useUpstreamConnections(node)
-  const fieldRefs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({})
+  const fieldRefs = useRef<
+    Record<string, HTMLInputElement | HTMLTextAreaElement | null>
+  >({})
   const [lastFieldKey, setLastFieldKey] = useState<string>()
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  useEffect(() => {
+    setIsDeleting(false)
+  }, [node?.id])
 
   if (!node) {
     return (
@@ -160,6 +179,19 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
     })
   }
 
+  const removeNode = () => {
+    if (isDeleting) return
+
+    setIsDeleting(true)
+    updateNode(node.id, { className: "workflow-node-exit" })
+
+    // Keep the node mounted while its exit animation plays. deleteElements
+    // also removes any edges connected to the node.
+    window.setTimeout(() => {
+      void deleteElements({ nodes: [{ id: node.id }] })
+    }, 180)
+  }
+
   return (
     <Section title={title} icon={<NodeIcon type={type} />}>
       <div className="flex items-center justify-end border-b border-border p-2">
@@ -168,10 +200,14 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
           variant="ghost"
           size="sm"
           className="gap-1.5 text-xs text-destructive hover:text-destructive"
-          onClick={() => deleteElements({ nodes: [node] })}
+          disabled={isDeleting}
+          onClick={removeNode}
         >
-          <Trash2 className="size-3.5" aria-hidden="true" />
-          Delete node
+          <Trash2
+            className={cn("size-3.5", isDeleting && "animate-pulse")}
+            aria-hidden="true"
+          />
+          {isDeleting ? "Removing..." : "Delete node"}
         </Button>
       </div>
       <div className="flex flex-col gap-3 p-3">
@@ -215,7 +251,10 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => insertConnection(connection.token)}
               >
-                <NodeIcon type={connection.type} className="size-4 rounded-sm" />
+                <NodeIcon
+                  type={connection.type}
+                  className="size-4 rounded-sm"
+                />
                 {connection.label}
               </Button>
             ))}
@@ -259,7 +298,10 @@ function Palette() {
     const nodes = getNodes()
 
     // Only one trigger is allowed — a workflow has a single entry point.
-    if (def.kind === "trigger" && nodes.some((n) => n.data.kind === "trigger")) {
+    if (
+      def.kind === "trigger" &&
+      nodes.some((n) => n.data.kind === "trigger")
+    ) {
       toast.error("A workflow can only have one trigger.")
       return
     }
@@ -409,11 +451,18 @@ function RunButton({ workflowId }: { workflowId: string }) {
 // The sidebar itself — header on top, then the Toolbar / Editor tabs.
 // ---------------------------------------------------------------------------
 
-export function RightSidebar({ workflowId }: { workflowId: string }) {
+export function RightSidebar({
+  workflowId,
+  schedule,
+}: {
+  workflowId: string
+  schedule?: { cron: string | null; timezone: string | null; active: boolean }
+}) {
   const [tab, setTab] = useState("toolbar")
 
   // TODO: read the currently selected node from React Flow.
-  const selected = useStore((s) => s.nodes.find((n) => n.selected)) as StepNodeType | undefined
+  const selected = useStore((s) => s.nodes.find((n) => n.selected)) as
+    StepNodeType | undefined
 
   // TODO: auto-switch to the Editor tab when the selection changes.
   const [prevSelectedId, setPrevSelectedId] = useState(selected?.id)
@@ -435,6 +484,7 @@ export function RightSidebar({ workflowId }: { workflowId: string }) {
           <ActionsMenu workflowId={workflowId} />
           <RunButton workflowId={workflowId} />
         </div>
+        <ScheduleControls workflowId={workflowId} schedule={schedule} />
         <TabsList className="m-2 w-fit bg-background">
           <TabsTrigger
             value="toolbar"
@@ -457,5 +507,86 @@ export function RightSidebar({ workflowId }: { workflowId: string }) {
         </TabsContent>
       </Tabs>
     </ResizablePanel>
+  )
+}
+
+function ScheduleControls({
+  workflowId,
+  schedule,
+}: {
+  workflowId: string
+  schedule?: { cron: string | null; timezone: string | null; active: boolean }
+}) {
+  const [cron, setCron] = useState(schedule?.cron ?? "0 9 * * *")
+  const [timezone, setTimezone] = useState(schedule?.timezone ?? "UTC")
+  const [isPending, startTransition] = useTransition()
+  const [scheduled, setScheduled] = useState(schedule?.active ?? false)
+
+  const addSchedule = () => {
+    startTransition(async () => {
+      try {
+        await scheduleWorkflowAction({ id: workflowId, cron, timezone })
+        setScheduled(true)
+        toast.success("Workflow scheduled")
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Could not schedule workflow"
+        )
+      }
+    })
+  }
+
+  const unschedule = () => {
+    startTransition(async () => {
+      try {
+        await unscheduleWorkflowAction(workflowId)
+        setScheduled(false)
+        toast.success("Workflow schedule removed")
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Could not remove schedule"
+        )
+      }
+    })
+  }
+
+  return (
+    <div className="border-b border-border p-3">
+      <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
+        <CalendarClock className="size-3.5" />
+        Schedule
+        {scheduled && (
+          <span className="ml-auto text-[10px] font-normal text-emerald-600">
+            Active
+          </span>
+        )}
+      </div>
+      <div className="flex flex-col gap-2">
+        <Input
+          aria-label="Cron expression"
+          value={cron}
+          onChange={(event) => setCron(event.target.value)}
+          placeholder="0 9 * * *"
+          className="h-8 font-mono text-xs"
+        />
+        <Input
+          aria-label="Schedule timezone"
+          value={timezone}
+          onChange={(event) => setTimezone(event.target.value)}
+          placeholder="UTC"
+          className="h-8 text-xs"
+        />
+        <p className="text-[10px] text-muted-foreground">
+          Cron: minute hour day month weekday
+        </p>
+        <Button
+          size="sm"
+          disabled={isPending}
+          onClick={scheduled ? unschedule : addSchedule}
+        >
+          {scheduled ? "Remove schedule" : "Schedule workflow"}
+        </Button>
+      </div>
+    </div>
   )
 }

@@ -1,13 +1,8 @@
 "use client"
 
 import React, { useSyncExternalStore } from "react"
-import {
-  ConnectionLineType,
-  Panel,
-  ReactFlow,
-  type Edge,
-} from "@xyflow/react"
-import { useLiveblocksFlow  , Cursors} from "@liveblocks/react-flow"
+import { ConnectionLineType, Panel, ReactFlow, type Edge } from "@xyflow/react"
+import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow"
 import { MoonIcon, SunIcon } from "lucide-react"
 import { AvatarStack } from "@liveblocks/react-ui"
 
@@ -51,8 +46,6 @@ const initialNodes: StepNodeType[] = [
 ]
 const initialEdges: Edge[] = []
 
-
-
 const emptySubscribe = () => () => {}
 
 export function WorkflowCanvas() {
@@ -60,9 +53,9 @@ export function WorkflowCanvas() {
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
-    () => false,
+    () => false
   )
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect } =
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, onDelete } =
     useLiveblocksFlow({
       suspense: true,
       nodes: { initial: initialNodes },
@@ -72,15 +65,16 @@ export function WorkflowCanvas() {
   return (
     <div className="size-full">
       <ReactFlow
-      nodeTypes={nodeTypes}
+        nodeTypes={nodeTypes}
         colorMode={mounted && resolvedTheme === "dark" ? "dark" : "light"}
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onDelete={onDelete}
         connectionLineType={ConnectionLineType.SmoothStep}
-        connectionLineStyle={{stroke: "var(--border)"}}
+        connectionLineStyle={{ stroke: "var(--border)" }}
         defaultEdgeOptions={{
           type: "smoothstep",
           style: {
@@ -89,9 +83,9 @@ export function WorkflowCanvas() {
         }}
         style={
           {
-            "--xy-background-color" : "var(--background)",
-            "--xy-edge-stoke-width" : 2,
-            "--xy-connectionline-stroke-width" : 2,
+            "--xy-background-color": "var(--background)",
+            "--xy-edge-stoke-width": 2,
+            "--xy-connectionline-stroke-width": 2,
           } as React.CSSProperties
         }
         fitView
@@ -110,10 +104,9 @@ export function WorkflowCanvas() {
           </Button>
         </Panel>
         <Panel position="top-right">
-            <AvatarStack/>
-
+          <AvatarStack />
         </Panel>
-        <Cursors/>
+        <Cursors />
       </ReactFlow>
     </div>
   )

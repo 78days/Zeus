@@ -1,4 +1,11 @@
-import { jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
+import {
+  boolean,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core"
 
 import type { Edge } from "@xyflow/react"
 
@@ -14,6 +21,10 @@ export const workflows = pgTable("workflows", {
   orgId: text("org_id").notNull(),
   name: text("name").notNull(),
   graph: jsonb("graph").$type<WorkflowGraph>().notNull(),
+  scheduleId: text("schedule_id"),
+  scheduleCron: text("schedule_cron"),
+  scheduleTimezone: text("schedule_timezone"),
+  scheduleActive: boolean("schedule_active").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
