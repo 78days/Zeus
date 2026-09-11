@@ -28,6 +28,13 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ResizablePanel } from "@/components/ui/resizable"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
@@ -41,6 +48,12 @@ import {
 } from "@/features/workflows/actions"
 import { useOrgPro } from "@/features/workflows/hooks/use-org-pro"
 import { useUpstreamConnections } from "@/features/workflows/hooks/use-upstream-connections"
+import {
+  defaultScheduleCron,
+  schedulePresets,
+  scheduleTimezones,
+  timezoneLabel,
+} from "@/features/workflows/lib/schedule-presets"
 import { validateGraph } from "@/features/workflows/lib/validate-graph"
 import { NodeIcon } from "@/features/workflows/components/node-icon"
 import { useLiveRun } from "@/features/workflows/components/workflow-runs-provider"
@@ -532,6 +545,10 @@ export function RightSidebar({
   )
 }
 
+// Scheduling made friendly: pick how often from a list of plain-language
+// presets (the cron is built for you) plus a timezone, then schedule. While a
+// schedule is active the button removes it; picking a different preset and
+// scheduling again updates the existing schedule.
 function ScheduleControls({
   workflowId,
   schedule,
@@ -539,16 +556,29 @@ function ScheduleControls({
   workflowId: string
   schedule?: { cron: string | null; timezone: string | null; active: boolean }
 }) {
-  const [cron, setCron] = useState(schedule?.cron ?? "0 9 * * *")
+  const [cron, setCron] = useState(schedule?.cron ?? defaultScheduleCron)
   const [timezone, setTimezone] = useState(schedule?.timezone ?? "UTC")
   const [isPending, startTransition] = useTransition()
-  const [scheduled, setScheduled] = useState(schedule?.active ?? false)
 
-  const addSchedule = () => {
+  const scheduled = schedule?.active ?? false
+  const isCurrent =
+    scheduled && cron === schedule?.cron && timezone === schedule?.timezone
+
+  // Workflows scheduled before presets existed may hold a cron that no preset
+  // generates — keep showing it (as a non-selectable option) instead of
+  // silently swapping in a preset.
+  const isCustomCron =
+    schedule?.cron != null &&
+    !schedulePresets.some((preset) => preset.cron === schedule.cron)
+  const isCustomTimezone = !scheduleTimezones.includes(timezone)
+  const timezoneOptions = isCustomTimezone
+    ? [...scheduleTimezones, timezone]
+    : scheduleTimezones
+
+  const scheduleWorkflow = () => {
     startTransition(async () => {
       try {
         await scheduleWorkflowAction({ id: workflowId, cron, timezone })
-        setScheduled(true)
         toast.success("Workflow scheduled")
       } catch (error) {
         toast.error(
@@ -562,7 +592,6 @@ function ScheduleControls({
     startTransition(async () => {
       try {
         await unscheduleWorkflowAction(workflowId)
-        setScheduled(false)
         toast.success("Workflow schedule removed")
       } catch (error) {
         toast.error(
@@ -584,29 +613,45 @@ function ScheduleControls({
         )}
       </div>
       <div className="flex flex-col gap-2">
-        <Input
-          aria-label="Cron expression"
-          value={cron}
-          onChange={(event) => setCron(event.target.value)}
-          placeholder="0 9 * * *"
-          className="h-8 font-mono text-xs"
-        />
-        <Input
-          aria-label="Schedule timezone"
-          value={timezone}
-          onChange={(event) => setTimezone(event.target.value)}
-          placeholder="UTC"
-          className="h-8 text-xs"
-        />
-        <p className="text-[10px] text-muted-foreground">
-          Cron: minute hour day month weekday
-        </p>
+        <Select value={cron} onValueChange={setCron}>
+          <SelectTrigger size="sm" className="w-full" aria-label="How often">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper" align="start">
+            {schedulePresets.map((preset) => (
+              <SelectItem key={preset.cron} value={preset.cron}>
+                {preset.label}
+              </SelectItem>
+            ))}
+            {isCustomCron && schedule?.cron && (
+              <SelectItem value={schedule.cron} disabled>
+                Custom ({schedule.cron})
+              </SelectItem>
+            )}
+          </SelectContent>
+        </Select>
+        <Select value={timezone} onValueChange={setTimezone}>
+          <SelectTrigger
+            size="sm"
+            className="w-full"
+            aria-label="Schedule timezone"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper" align="start">
+            {timezoneOptions.map((zone) => (
+              <SelectItem key={zone} value={zone}>
+                {timezoneLabel(zone)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button
           size="sm"
           disabled={isPending}
-          onClick={scheduled ? unschedule : addSchedule}
+          onClick={isCurrent ? unschedule : scheduleWorkflow}
         >
-          {scheduled ? "Remove schedule" : "Schedule workflow"}
+          {isCurrent ? "Remove schedule" : "Schedule workflow"}
         </Button>
       </div>
     </div>

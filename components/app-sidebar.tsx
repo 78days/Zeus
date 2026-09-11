@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sidebar"
 import { createWorkflowAction } from "@/features/workflows/actions"
 import { Workflownav } from "@/features/workflows/components/workflow-nav"
+import { ScheduledNav } from "@/features/workflows/components/scheduled-nav"
 import { listWorkflows } from "@/features/workflows/data"
 
 export async function AppSidebar() {
@@ -23,9 +24,9 @@ export async function AppSidebar() {
         <div className="flex h-8 items-center gap-2">
           <div className="min-w-0 flex-1 overflow-hidden group-data-[collapsible=icon]:hidden">
             <OrganizationSwitcher
-            afterCreateOrganizationUrl="/"
-            afterSelectOrganizationUrl="/"
-            afterLeaveOrganizationUrl="/"
+              afterCreateOrganizationUrl="/"
+              afterSelectOrganizationUrl="/"
+              afterLeaveOrganizationUrl="/"
               hidePersonal
               appearance={{
                 elements: {
@@ -45,6 +46,7 @@ export async function AppSidebar() {
           workflows={workflows}
           createWorkflowAction={createWorkflowAction}
         />
+        <ScheduledNav />
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-3">

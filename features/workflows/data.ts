@@ -56,6 +56,18 @@ export function listWorkflows(orgId: string) {
   )
 }
 
+export function listScheduledWorkflows(orgId: string) {
+  return withDatabaseRetry(() =>
+    db
+      .select()
+      .from(workflows)
+      .where(
+        and(eq(workflows.orgId, orgId), eq(workflows.scheduleActive, true))
+      )
+      .orderBy(desc(workflows.createdAt))
+  )
+}
+
 export async function getWorkflow(orgId: string, id: string) {
   const [workflow] = await withDatabaseRetry(() =>
     db
