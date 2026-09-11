@@ -7,6 +7,7 @@ import {
   LockKeyhole,
   MoreHorizontal,
   Play,
+  Square,
   Trash2,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -32,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
 import {
+  cancelWorkflowRunAction,
   deleteWorkflowAction,
   runWorkflowAction,
   scheduleWorkflowAction,
@@ -41,6 +43,7 @@ import { useOrgPro } from "@/features/workflows/hooks/use-org-pro"
 import { useUpstreamConnections } from "@/features/workflows/hooks/use-upstream-connections"
 import { validateGraph } from "@/features/workflows/lib/validate-graph"
 import { NodeIcon } from "@/features/workflows/components/node-icon"
+import { useLiveRun } from "@/features/workflows/components/workflow-runs-provider"
 import {
   nodeRegistry,
   type NodeDefinition,
@@ -51,7 +54,7 @@ import {
 } from "@/features/workflows/nodes/node-registry"
 
 // This file builds up to the RightSidebar component exported at the bottom: a
-// header with workflow actions (delete, run), then two tabs — a Toolbar for
+// header with workflow actions (delete, run/stop), then two tabs — a Toolbar for
 // adding nodes and an Editor for tweaking the selected node. Each helper below is
 // defined just above the block that uses it.
 
@@ -417,10 +420,30 @@ function ActionsMenu({ workflowId }: { workflowId: string }) {
   )
 }
 
-// Kicks off a run of the current workflow.
+// Kicks off a run of the current workflow — or, while a run is in flight,
+// stops that run instead.
 function RunButton({ workflowId }: { workflowId: string }) {
   const { getNodes, getEdges } = useReactFlow<StepNodeType>()
+  const liveRun = useLiveRun()
   const [isPending, startTransition] = useTransition()
+
+  if (liveRun) {
+    return (
+      <Button
+        size="sm"
+        variant="destructive"
+        disabled={isPending}
+        onClick={() => {
+          startTransition(async () => {
+            await cancelWorkflowRunAction(liveRun.id)
+          })
+        }}
+      >
+        <Square fill="currentColor" />
+        Stop
+      </Button>
+    )
+  }
 
   return (
     <Button
@@ -428,7 +451,6 @@ function RunButton({ workflowId }: { workflowId: string }) {
       variant="secondary"
       disabled={isPending}
       onClick={() => {
-        // TODO: validate the graph and run the workflow (toggle to Stop while running).
         const graph = { nodes: getNodes(), edges: getEdges() }
         const problems = validateGraph(graph)
         if (problems.length > 0) {

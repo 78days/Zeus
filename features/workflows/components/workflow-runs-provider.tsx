@@ -95,8 +95,22 @@ export function useLatestRunSteps(): { steps: RunStep[]; live: boolean } {
 
   return {
     steps,
-    live: ["QUEUED", "EXECUTING"].includes(latestRun.status.toUpperCase()),
+    live: isLiveStatus(latestRun.status),
   }
+}
+
+// At most one run is live at a time — the one currently queued or executing.
+export function useLiveRun(): WorkflowRun | undefined {
+  const context = useContext(WorkflowRunsContext)
+  if (!context) {
+    throw new Error("useLiveRun must be used within WorkflowRunsProvider")
+  }
+
+  return context.runs.find((run) => isLiveStatus(run.status))
+}
+
+function isLiveStatus(status: string) {
+  return ["QUEUED", "EXECUTING"].includes(status.toUpperCase())
 }
 
 function readRunSteps(

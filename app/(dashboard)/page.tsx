@@ -1,5 +1,7 @@
+"use client"
 
 import { Plus, Workflow } from "lucide-react"
+import { useTransition } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -10,8 +12,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { createWorkflowAction } from "@/features/workflows/actions"
+import { generateSlug } from "@/features/workflows/lib/generate-slug"
 
 export default function Page() {
+  const [isPending, startTransition] = useTransition()
+
   return (
     <div className="flex min-h-0 flex-1">
       <Empty className="gap-7 rounded-none">
@@ -29,7 +35,16 @@ export default function Page() {
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <Button size="lg" className="h-11 gap-3 px-5 text-base">
+          <Button
+            size="lg"
+            className="h-11 gap-3 px-5 text-base"
+            disabled={isPending}
+            onClick={() => {
+              startTransition(async () => {
+                await createWorkflowAction(generateSlug())
+              })
+            }}
+          >
             <Plus className="size-5" aria-hidden="true" />
             New workflow
           </Button>
