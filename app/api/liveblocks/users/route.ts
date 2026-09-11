@@ -11,7 +11,10 @@ export async function POST(request: Request) {
 
   const { userIds } = (await request.json()) as { userIds?: unknown }
 
-  if (!Array.isArray(userIds) || !userIds.every((id) => typeof id === "string")) {
+  if (
+    !Array.isArray(userIds) ||
+    !userIds.every((id) => typeof id === "string")
+  ) {
     return Response.json({ error: "Invalid userIds" }, { status: 400 })
   }
 
@@ -22,7 +25,9 @@ export async function POST(request: Request) {
   // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
   let users
   try {
-    users = await (await clerkClient()).users.getUserList({
+    users = await (
+      await clerkClient()
+    ).users.getUserList({
       userId: userIds,
       organizationId: [orgId],
       limit: userIds.length,
@@ -46,6 +51,6 @@ export async function POST(request: Request) {
           user.id,
         avatar: user.imageUrl,
       }
-    }),
+    })
   )
 }

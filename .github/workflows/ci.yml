@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    name: Lint, typecheck, and build
+    runs-on: ubuntu-latest
+    env:
+      # Placeholder credentials: every page renders dynamically at runtime, so
+      # the build only needs correctly-shaped values to compile and collect
+      # page data. Real secrets live in Vercel/Trigger.dev only.
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ci_placeholder
+      CLERK_SECRET_KEY: sk_test_ci_placeholder
+      DATABASE_URL: postgresql://user:pass@localhost:5432/zeus
+      DATABASE_URL_UNPOOLED: postgresql://user:pass@localhost:5432/zeus
+      LIVEBLOCKS_SECRET_KEY: sk_ci_placeholder
+      RESEND_API_KEY: re_ci_placeholder
+      BROWSERBASE_API_KEY: bb_ci_placeholder
+      TRIGGER_SECRET_KEY: tr_ci_placeholder
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Check formatting
+        run: npx prettier --check "**/*.{ts,tsx}"
+
+      - name: Build
+        run: npm run build

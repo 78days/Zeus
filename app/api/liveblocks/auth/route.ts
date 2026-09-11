@@ -32,12 +32,14 @@ export async function POST() {
             "Anonymous",
           avatar: user.imageUrl,
         },
-      },
+      }
     )
 
     return new Response(body, { status })
   } catch (error) {
     reportError(error, { operation: "liveblocks.identify-user", orgId, userId })
-    return new Response("Failed to authenticate with Liveblocks", { status: 502 })
+    return new Response("Failed to authenticate with Liveblocks", {
+      status: 502,
+    })
   }
 }

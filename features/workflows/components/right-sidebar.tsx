@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useTransition } from "react"
+import { useRef, useState, useTransition } from "react"
 import { useReactFlow, useStore } from "@xyflow/react"
 import {
   CalendarClock,
@@ -155,9 +155,13 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
   const [lastFieldKey, setLastFieldKey] = useState<string>()
   const [isDeleting, setIsDeleting] = useState(false)
 
-  useEffect(() => {
+  // Reset the deleting state when a different node becomes selected — derived
+  // during render instead of in an effect to avoid cascading re-renders.
+  const [prevNodeId, setPrevNodeId] = useState(node?.id)
+  if (node?.id !== prevNodeId) {
+    setPrevNodeId(node?.id)
     setIsDeleting(false)
-  }, [node?.id])
+  }
 
   if (!node) {
     return (

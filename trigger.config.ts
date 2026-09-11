@@ -1,6 +1,6 @@
-import { defineConfig } from "@trigger.dev/sdk";
-import { esbuildPlugin } from "@trigger.dev/build/extensions";
-import { sentryEsbuildPlugin } from "@sentry/esbuild-plugin";
+import { defineConfig } from "@trigger.dev/sdk"
+import { esbuildPlugin } from "@trigger.dev/build/extensions"
+import { sentryEsbuildPlugin } from "@sentry/esbuild-plugin"
 
 export default defineConfig({
   project: "proj_lempujqimjilnvqcosba",
@@ -35,4 +35,4 @@ export default defineConfig({
       ),
     ],
   },
-});
+})

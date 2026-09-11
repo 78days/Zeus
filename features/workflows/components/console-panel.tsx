@@ -29,28 +29,19 @@ export function ConsolePanel() {
       : undefined
 
   return (
-    <ResizablePanelGroup
-      className="size-full"
-      orientation="horizontal"
-    >
+    <ResizablePanelGroup className="size-full" orientation="horizontal">
       <ResizablePanel minSize="12rem">
-        <LogsPanel
-          runs={runs}
-          selection={selection}
-          onSelect={select}
-        />
+        <LogsPanel runs={runs} selection={selection} onSelect={select} />
       </ResizablePanel>
       {(selectedStep || (selection?.type === "replay" && selectedRun)) && (
         <>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize="50%" minSize="16rem">
-            {selection?.type === "replay" ? (
-              selectedRun?.sessionId && (
-                <InspectorPanel sessionId={selectedRun.sessionId} />
-              )
-            ) : (
-              selectedStep && <InspectorPanel step={selectedStep} />
-            )}
+            {selection?.type === "replay"
+              ? selectedRun?.sessionId && (
+                  <InspectorPanel sessionId={selectedRun.sessionId} />
+                )
+              : selectedStep && <InspectorPanel step={selectedStep} />}
           </ResizablePanel>
         </>
       )}

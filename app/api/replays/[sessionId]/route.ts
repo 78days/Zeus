@@ -24,8 +24,13 @@ export async function GET(
   try {
     session = await browserbase.sessions.retrieve(sessionId)
   } catch (error) {
-    if (getStatus(error) === 404) return new Response("Not found", { status: 404 })
-    reportError(error, { operation: "replays.retrieve-session", sessionId, orgId })
+    if (getStatus(error) === 404)
+      return new Response("Not found", { status: 404 })
+    reportError(error, {
+      operation: "replays.retrieve-session",
+      sessionId,
+      orgId,
+    })
     return new Response("Failed to retrieve replay", { status: 502 })
   }
 
@@ -53,7 +58,11 @@ export async function GET(
     const status = getStatus(error)
     if (status === 404 || status === 409 || status === 425) return notReady()
 
-    reportError(error, { operation: "replays.retrieve-playlist", sessionId, orgId })
+    reportError(error, {
+      operation: "replays.retrieve-playlist",
+      sessionId,
+      orgId,
+    })
     return new Response("Failed to retrieve replay", { status: 502 })
   }
 }

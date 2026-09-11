@@ -40,7 +40,7 @@ export const nodeRegistry = {
     icon: MousePointerClick,
     accent: "bg-blue-500 text-white",
     fields: [],
-    outputs : []
+    outputs: [],
   },
   agent: {
     type: "agent",
@@ -154,18 +154,23 @@ export const nodeRegistry = {
     icon: Globe,
     accent: "bg-emerald-500 text-white",
     fields: [
-      { key: "url", label: "URL", placeholder: "https://youtube.com" , required: true },
+      {
+        key: "url",
+        label: "URL",
+        placeholder: "https://youtube.com",
+        required: true,
+      },
       {
         key: "description",
         label: "Description",
         placeholder: "Large Text",
         multiline: true,
-      }
+      },
     ],
-    outputs : [
-      { path : "url", label : "URL" },
-      { path : "title", label : "Title" }
-    ]
+    outputs: [
+      { path: "url", label: "URL" },
+      { path: "title", label: "Title" },
+    ],
   },
 } satisfies Record<string, NodeDefinition>
 
@@ -187,6 +192,6 @@ export type ActionNodeType = {
 }[NodeType]
 
 export type NodeOutput = {
-  path : string
-  label : string
+  path: string
+  label: string
 }

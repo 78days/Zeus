@@ -31,7 +31,7 @@ export function InspectorPanel({
         <span className="min-w-0 flex-1 truncate">{step.title}</span>
         <span
           className={cn(
-            "text-[10px] font-medium uppercase tracking-wide text-muted-foreground",
+            "text-[10px] font-medium tracking-wide text-muted-foreground uppercase",
             step.status === "failed" && "text-destructive",
             step.status === "running" && "text-blue-500"
           )}
@@ -46,17 +46,17 @@ export function InspectorPanel({
               <CircleAlert className="size-3.5" />
               {error.name}
             </div>
-            <p className="whitespace-pre-wrap break-words text-destructive/90">
+            <p className="break-words whitespace-pre-wrap text-destructive/90">
               {error.message}
             </p>
             {error.stack && (
-              <pre className="whitespace-pre-wrap break-words rounded-md bg-destructive/5 p-2 font-mono text-[10px] text-muted-foreground">
+              <pre className="rounded-md bg-destructive/5 p-2 font-mono text-[10px] break-words whitespace-pre-wrap text-muted-foreground">
                 {error.stack}
               </pre>
             )}
           </div>
         ) : formattedOutput ? (
-          <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-md bg-muted/50 p-2 font-mono text-[11px] leading-relaxed">
+          <pre className="overflow-x-auto rounded-md bg-muted/50 p-2 font-mono text-[11px] leading-relaxed break-words whitespace-pre-wrap">
             {formattedOutput}
           </pre>
         ) : (

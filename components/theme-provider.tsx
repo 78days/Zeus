@@ -14,9 +14,7 @@ const ThemeContext = React.createContext<ThemeContextValue | undefined>(
   undefined
 )
 
-function ThemeProvider({
-  children,
-}: React.PropsWithChildren) {
+function ThemeProvider({ children }: React.PropsWithChildren) {
   const [theme, setTheme] = React.useState<Theme>(() => {
     if (typeof window === "undefined") return "system"
     const storedTheme = window.localStorage.getItem("theme")
@@ -24,12 +22,11 @@ function ThemeProvider({
       ? storedTheme
       : "system"
   })
-  const [systemTheme, setSystemTheme] = React.useState<"light" | "dark">(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light"
+  const [systemTheme, setSystemTheme] = React.useState<"light" | "dark">(() =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light"
   )
 
   React.useEffect(() => {
@@ -46,7 +43,10 @@ function ThemeProvider({
     window.localStorage.setItem("theme", theme)
     const resolvedTheme = theme === "system" ? systemTheme : theme
     document.documentElement.classList.toggle("dark", resolvedTheme === "dark")
-    document.documentElement.classList.toggle("light", resolvedTheme === "light")
+    document.documentElement.classList.toggle(
+      "light",
+      resolvedTheme === "light"
+    )
     document.documentElement.style.colorScheme = resolvedTheme
   }, [systemTheme, theme])
 

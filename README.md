@@ -1,5 +1,7 @@
 # ⚡ ZEUS
 
+[![CI](https://github.com/78days/Zeus/actions/workflows/ci.yml/badge.svg)](https://github.com/78days/Zeus/actions/workflows/ci.yml)
+
 **ZEUS is a visual workflow automation platform for browser-based tasks.** Build workflows on a collaborative canvas, combine browser actions with structured data extraction and email delivery, and run the finished workflow as a durable background job — with live step-by-step progress, session replays, and scheduling.
 
 > Design a flow once. Zeus runs it in a real browser, on a schedule, and shows you exactly what happened.
@@ -168,6 +170,8 @@ Workflow runs are handled by the `run-workflow` task in `src/trigger/run-workflo
 | `npm run db:migrate` | Apply pending Drizzle migrations. |
 | `npm run db:push` | Push the schema directly to the database (dev only — bypasses migration history). |
 | `npm run db:studio` | Open Drizzle Studio. |
+
+CI runs on every push and pull request (`.github/workflows/ci.yml`): install → lint → typecheck → format check → production build.
 
 ## Project Structure
 

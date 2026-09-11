@@ -2,7 +2,10 @@
 
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
-import { nodeRegistry, type NodeType } from "@/features/workflows/nodes/node-registry"
+import {
+  nodeRegistry,
+  type NodeType,
+} from "@/features/workflows/nodes/node-registry"
 
 export function NodeIcon({
   type,
@@ -24,7 +27,11 @@ export function NodeIcon({
         className
       )}
     >
-      {running ? <Spinner className="size-3.5" /> : <Icon className="size-3.5" />}
+      {running ? (
+        <Spinner className="size-3.5" />
+      ) : (
+        <Icon className="size-3.5" />
+      )}
     </span>
   )
 }

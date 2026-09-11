@@ -15,7 +15,9 @@ export function SessionReplay({ sessionId }: { sessionId: string }) {
 
     const poll = async () => {
       try {
-        const response = await fetch(`/api/replays/${encodeURIComponent(sessionId)}`)
+        const response = await fetch(
+          `/api/replays/${encodeURIComponent(sessionId)}`
+        )
         if (response.status === 202) {
           timer = setTimeout(poll, 2000)
           return
@@ -35,7 +37,8 @@ export function SessionReplay({ sessionId }: { sessionId: string }) {
           scope.setExtra("sessionId", sessionId)
           Sentry.captureException(cause)
         })
-        if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause))
+        if (!cancelled)
+          setError(cause instanceof Error ? cause.message : String(cause))
       }
     }
 

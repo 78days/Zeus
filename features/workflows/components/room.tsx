@@ -1,19 +1,22 @@
 "use client"
 
-import { ReactNode } from "react";
+import { ReactNode } from "react"
 import * as Sentry from "@sentry/nextjs"
 import {
   LiveblocksProvider,
   RoomProvider,
   ClientSideSuspense,
-} from "@liveblocks/react/suspense";
+} from "@liveblocks/react/suspense"
 
 import { Spinner } from "@/components/ui/spinner"
 
-export function Room({ 
-    roomId,
-    children
- }: { roomId : string, children: ReactNode }) {
+export function Room({
+  roomId,
+  children,
+}: {
+  roomId: string
+  children: ReactNode
+}) {
   return (
     <LiveblocksProvider
       authEndpoint="/api/liveblocks/auth"
@@ -23,18 +26,18 @@ export function Room({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ userIds }),
-          });
+          })
 
-          if (!response.ok) return undefined;
+          if (!response.ok) return undefined
 
-          return await response.json();
-         } catch (error) {
-           Sentry.withScope((scope) => {
-             scope.setTag("operation", "liveblocks.resolve-users-client")
-             scope.setExtra("userCount", userIds.length)
-             Sentry.captureException(error)
-           })
-           return undefined;
+          return await response.json()
+        } catch (error) {
+          Sentry.withScope((scope) => {
+            scope.setTag("operation", "liveblocks.resolve-users-client")
+            scope.setExtra("userCount", userIds.length)
+            Sentry.captureException(error)
+          })
+          return undefined
         }
       }}
     >
@@ -50,5 +53,5 @@ export function Room({
         </ClientSideSuspense>
       </RoomProvider>
     </LiveblocksProvider>
-  );
+  )
 }

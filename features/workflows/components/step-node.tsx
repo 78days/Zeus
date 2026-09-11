@@ -4,13 +4,10 @@ import { Handle, Position, type NodeProps } from "@xyflow/react"
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 import { useLatestRunSteps } from "./workflow-runs-provider"
-import {
-  nodeRegistry,
-  type StepNodeType,
-} from "../nodes/node-registry"
+import { nodeRegistry, type StepNodeType } from "../nodes/node-registry"
 
 function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
-  const { type, kind, title ,values } = data
+  const { type, kind, title, values } = data
   const def = nodeRegistry[type]
   const Icon = def.icon
   const { steps, live } = useLatestRunSteps()
@@ -25,7 +22,7 @@ function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
   return (
     <div
       className={cn(
-        "min-w-50 max-w-80 rounded-(--radius) border-2 border-border bg-card text-card-foreground",
+        "max-w-80 min-w-50 rounded-(--radius) border-2 border-border bg-card text-card-foreground",
         isRunning && "border-blue-500 bg-blue-500/10",
         isFailed && "border-destructive bg-destructive/10",
         selected && "ring-2 ring-ring ring-offset-2 ring-offset-background"
@@ -41,36 +38,43 @@ function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
       )}
 
       <div className="flex items-center gap-2.5 px-3 py-2.5">
-          <div
-            className={cn(
-              "flex size-7 shrink-0 items-center justify-center rounded-md",
-              def.accent,
-              isRunning && "bg-blue-500 text-white",
-              isFailed && "bg-destructive text-destructive-foreground"
-            )}
-          >
-            {isRunning ? <Spinner className="size-4" /> : <Icon className="size-4" />}
-          </div>
+        <div
+          className={cn(
+            "flex size-7 shrink-0 items-center justify-center rounded-md",
+            def.accent,
+            isRunning && "bg-blue-500 text-white",
+            isFailed && "text-destructive-foreground bg-destructive"
+          )}
+        >
+          {isRunning ? (
+            <Spinner className="size-4" />
+          ) : (
+            <Icon className="size-4" />
+          )}
+        </div>
         <span className="text-sm font-semibold">{title}</span>
       </div>
 
-
       {fields.length > 0 && (
-  <>
-    <div className="border-t border-border" />
-    <div className="flex flex-col gap-1.5 px-3 py-2.5">
-      {fields.map((field) => (
-        <div
-          key={field.key}
-          className="flex items-center justify-between gap-4 text-xs"
-        >
-          <span className="shrink-0 text-muted-foreground">{field.label}</span>
-          <span className="truncate font-medium">{values[field.key]}</span>
-        </div>
-      ))}
-    </div>
-  </>
-)}
+        <>
+          <div className="border-t border-border" />
+          <div className="flex flex-col gap-1.5 px-3 py-2.5">
+            {fields.map((field) => (
+              <div
+                key={field.key}
+                className="flex items-center justify-between gap-4 text-xs"
+              >
+                <span className="shrink-0 text-muted-foreground">
+                  {field.label}
+                </span>
+                <span className="truncate font-medium">
+                  {values[field.key]}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
       <Handle
         type="source"
         position={Position.Right}
