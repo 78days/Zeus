@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     return Response.json([])
   }
 
+  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
   let users
   try {
     users = await (await clerkClient()).users.getUserList({

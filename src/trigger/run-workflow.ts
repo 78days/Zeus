@@ -84,9 +84,11 @@ export const runWorkflowTask = task({
         browser,
         model: {
           modelName: "google/gemini-2.5-flash",
-          apiKey,
         },
-        logging: { level: "off", format: "pretty" },
+        logging: {
+          level: "off",
+          format: "pretty",
+        },
       })
       return stagehand
     }
