@@ -9,7 +9,7 @@ export type RunStep = {
   id: string
   nodeType: string
   title: string
-  status: "pending" | "running" | "done" | "failed"
+  status: "pending" | "running" | "done" | "failed" | "stopped" | "skipped"
   startedAt?: string
   finishedAt?: string
   durationMs?: number
@@ -37,8 +37,9 @@ export const runWorkflowTask = task({
     // Run only connected nodes — anything touching an edge. Orphans dropped on
     // the canvas are skipped. toposort orders them and throws on a cycle.
     const connected = new Set(edges.flatMap((e) => [e.source, e.target]))
-    const order = toposort(edges.map((e) => [e.source, e.target]))
-      .filter((id) => connected.has(id))
+    const order = toposort(edges.map((e) => [e.source, e.target])).filter(
+      (id) => connected.has(id)
+    )
     const steps: RunStep[] = order.map((id) => {
       const node = byId.get(id)
       return {

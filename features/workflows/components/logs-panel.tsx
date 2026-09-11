@@ -1,7 +1,7 @@
 "use client"
 
 import prettyMs from "pretty-ms"
-import { Check, CircleAlert, Play } from "lucide-react"
+import { Check, CircleAlert, Minus, Play, Square } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { NodeIcon } from "@/features/workflows/components/node-icon"
@@ -61,7 +61,9 @@ export function LogsPanel({
                         selection.runId === run.id &&
                         selection.nodeId === step.id &&
                         "bg-muted",
-                      step.status === "pending" && "opacity-50",
+                      (step.status === "pending" ||
+                        step.status === "skipped") &&
+                        "opacity-50",
                       step.status === "failed" && "text-destructive"
                     )}
                     onClick={() =>
@@ -77,7 +79,9 @@ export function LogsPanel({
                     <span
                       className={cn(
                         "min-w-0 flex-1 truncate",
-                        step.status === "pending" && "text-muted-foreground",
+                        (step.status === "pending" ||
+                          step.status === "skipped") &&
+                          "text-muted-foreground",
                         step.status === "failed" && "text-destructive"
                       )}
                     >
@@ -145,13 +149,19 @@ function RunStatus({ status }: { status: string }) {
 function StepStatus({
   status,
 }: {
-  status: "pending" | "running" | "done" | "failed"
+  status: "pending" | "running" | "done" | "failed" | "stopped" | "skipped"
 }) {
   if (status === "running") return null
   if (status === "failed") {
     return <CircleAlert className="size-3.5 text-destructive" />
   }
   if (status === "done") return <Check className="size-3.5 text-emerald-500" />
+  if (status === "stopped") {
+    return <Square className="size-3 fill-current text-destructive" />
+  }
+  if (status === "skipped") {
+    return <Minus className="size-3.5 text-muted-foreground" />
+  }
   return (
     <span className="size-3.5 shrink-0 rounded-full bg-muted-foreground/30" />
   )

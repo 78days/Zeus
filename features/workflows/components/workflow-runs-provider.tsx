@@ -1,10 +1,6 @@
 "use client"
 
-import {
-  createContext,
-  useContext,
-  type ReactNode,
-} from "react"
+import { createContext, useContext, type ReactNode } from "react"
 import { useRealtimeRunsWithTag } from "@trigger.dev/react-hooks"
 import { useEffect } from "react"
 
@@ -39,10 +35,9 @@ export function WorkflowRunsProvider({
   publicAccessToken: string
   children: ReactNode
 }) {
-  const { runs, error } = useRealtimeRunsWithTag(
-    `workflow:${workflowId}`,
-    { accessToken: publicAccessToken }
-  )
+  const { runs, error } = useRealtimeRunsWithTag(`workflow:${workflowId}`, {
+    accessToken: publicAccessToken,
+  })
 
   useEffect(() => {
     if (!error) return
@@ -54,13 +49,13 @@ export function WorkflowRunsProvider({
     })
   }, [error, workflowId])
 
-  const workflowRuns = (runs as Array<Omit<WorkflowRun, "steps" | "sessionId">>).map(
-    (run) => ({
-      ...run,
-      steps: readRunSteps(run) ?? [],
-      sessionId: readSessionId(run.output),
-    })
-  )
+  const workflowRuns = (
+    runs as Array<Omit<WorkflowRun, "steps" | "sessionId">>
+  ).map((run) => ({
+    ...run,
+    steps: settleSteps(readRunSteps(run) ?? [], run.status),
+    sessionId: readSessionId(run.output),
+  }))
 
   return (
     <WorkflowRunsContext.Provider value={{ runs: workflowRuns }}>
@@ -81,12 +76,13 @@ export function useWorkflowRuns(): WorkflowRun[] {
 export function useLatestRunSteps(): { steps: RunStep[]; live: boolean } {
   const context = useContext(WorkflowRunsContext)
   if (!context) {
-    throw new Error("useLatestRunSteps must be used within WorkflowRunsProvider")
+    throw new Error(
+      "useLatestRunSteps must be used within WorkflowRunsProvider"
+    )
   }
 
   const latestRun = [...context.runs].sort(
-    (a, b) =>
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   )[0]
 
   if (!latestRun) return { steps: [], live: false }
@@ -113,9 +109,23 @@ function isLiveStatus(status: string) {
   return ["QUEUED", "EXECUTING"].includes(status.toUpperCase())
 }
 
-function readRunSteps(
-  run: { output?: unknown; metadata?: unknown }
-): RunStep[] | undefined {
+// A cancelled (or crashed) run dies before the task can update its steps, so
+// the step in flight stays "running" and the rest stay "pending" forever. Once
+// the run reaches a terminal status, settle them so nothing keeps spinning.
+function settleSteps(steps: RunStep[], runStatus: string): RunStep[] {
+  if (isLiveStatus(runStatus)) return steps
+
+  return steps.map((step) => {
+    if (step.status === "running") return { ...step, status: "stopped" }
+    if (step.status === "pending") return { ...step, status: "skipped" }
+    return step
+  })
+}
+
+function readRunSteps(run: {
+  output?: unknown
+  metadata?: unknown
+}): RunStep[] | undefined {
   const outputSteps = readSteps(run.output)
   const metadataSteps = readSteps(run.metadata)
   if (isRunSteps(metadataSteps)) return metadataSteps
