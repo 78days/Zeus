@@ -219,9 +219,14 @@ Cancelled runs settle gracefully: the in-flight step is marked `stopped` and rem
 
 ## Deployment
 
-### Vercel (recommended)
+ZEUS is live in production:
 
-**ZEUS is live at [zeus-eight-xi.vercel.app](https://zeus-eight-xi.vercel.app).**
+| Deployment | Platform | URL |
+| --- | --- | --- |
+| Application | Vercel | [zeus-eight-xi.vercel.app](https://zeus-eight-xi.vercel.app) |
+| Background workers | Railway | [railway.app](https://railway.app) |
+
+### Vercel (application)
 
 1. Push the repository to GitHub.
 2. Import the project into Vercel and add every variable from `.env.local` in **Settings → Environment Variables** — builds fail fast if required secrets (e.g. `LIVEBLOCKS_SECRET_KEY`) are missing.
@@ -229,13 +234,21 @@ Cancelled runs settle gracefully: the in-flight step is marked `stopped` and rem
 
 > Tip: keep Vercel's Deployment Protection enabled for internal use, and disable it only when the app should be publicly reachable.
 
-### Trigger.dev
+### Railway (Trigger.dev workers)
 
-Deploy the background workers separately:
+The `run-workflow` and `scheduled-workflow` tasks run as a long-lived Trigger.dev worker:
 
 ```bash
 npx trigger.dev@latest deploy
 ```
+
+Alternatively, self-host the worker as a Railway service with the Trigger.dev agent:
+
+```bash
+npx trigger.dev@latest deploy --self-hosted --url https://<your-railway-service>.up.railway.app
+```
+
+Point it at the same database and provider credentials as the Vercel deployment, and set `TRIGGER_SECRET_KEY` in the Railway service's variables.
 
 ## Security
 
