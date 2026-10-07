@@ -4,7 +4,9 @@ export default clerkMiddleware(async (auth, req) => {
   const pathname = req.nextUrl.pathname
 
   const isPublicRoute =
-    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")
+    pathname === "/" ||
+    pathname.startsWith("/sign-in") ||
+    pathname.startsWith("/sign-up")
 
   if (!isPublicRoute) {
     await auth.protect()
