@@ -8,5 +8,6 @@ export const helloWorldTask = task({
     console.log(message)
 
     return { message }
+    
   },
 })
